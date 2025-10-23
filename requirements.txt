@@ -1,0 +1,8 @@
+# tkinter (needs to be imported separatedly by cli)
+tkcalendar
+Pillow
+fpdf2
+mysql-connector-python
+pandas
+numpy
+dotenv
