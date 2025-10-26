@@ -1,4 +1,4 @@
-# tkinter (needs to be imported separatedly by cli)
+# tkinter (needs to be installed separatedly by cli)
 tkcalendar
 Pillow
 fpdf2
@@ -6,5 +6,5 @@ mysql-connector-python
 pandas
 numpy
 dotenv
-# Install passlib and its recommended hashing backends
-passlib[bcrypt,argon2-cffi]
+passlib[bcrypt]==1.7.4
+bcrypt==4.3.0
