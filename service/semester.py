@@ -1,5 +1,5 @@
 from types import SimpleNamespace as sn
-from config.db import cursor, db_connection
+from config.db import cursor, conn
 from typing import List, Optional, Any
 
 SEMESTER_COLUMNS = ('id', 'year', 'term_order')
@@ -30,18 +30,18 @@ def get_semesters_by_year(year: int) -> List[sn]:
 def add_semester(year: int, term_order: str) -> Optional[int]:
     query = "INSERT INTO semesters (year, term_order) VALUES (%s, %s)"
     cursor.execute(query, (year, term_order))
-    db_connection.commit()
+    conn.commit()
     return cursor.lastrowid
 
 def update_semester(id: int, year: int, term_order: str) -> bool:
     query = "UPDATE semesters SET year = %s, term_order = %s WHERE id = %s"
     cursor.execute(query, (year, term_order, id))
-    db_connection.commit()
+    conn.commit()
     return True
 
 def delete_semester(id: int) -> bool:
     query = "DELETE FROM semesters WHERE id = %s"
     cursor.execute(query, (id,))
-    db_connection.commit()
+    conn.commit()
     return True
 

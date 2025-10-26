@@ -1,5 +1,5 @@
 from types import SimpleNamespace as sn
-from config.db import cursor, db_connection
+from config.db import cursor, conn
 from typing import List, Optional, Any
 
 SECTIONAL_CLASS_COLUMNS = ('id', 'name', 'semester_id', 'subject_id', 'major_id')
@@ -30,18 +30,18 @@ def get_classes_by_semester(semester_id: int) -> List[sn]:
 def add_class(name: str, semester_id: int, subject_id: str, major_id: int) -> Optional[int]:
     query = "INSERT INTO sectional_classes (name, semester_id, subject_id, major_id) VALUES (%s, %s, %s, %s)"
     cursor.execute(query, (name, semester_id, subject_id, major_id))
-    db_connection.commit()
+    conn.commit()
     return cursor.lastrowid
 
 def update_class(id: int, name: str, semester_id: int, subject_id: str, major_id: int) -> bool:
     query = "UPDATE sectional_classes SET name = %s, semester_id = %s, subject_id = %s, major_id = %s WHERE id = %s"
     cursor.execute(query, (name, semester_id, subject_id, major_id, id))
-    db_connection.commit()
+    conn.commit()
     return True
 
 def delete_class(id: int) -> bool:
     query = "DELETE FROM sectional_classes WHERE id = %s"
     cursor.execute(query, (id,))
-    db_connection.commit()
+    conn.commit()
     return True
 
