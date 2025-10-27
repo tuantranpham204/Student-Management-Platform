@@ -2,28 +2,18 @@ from types import SimpleNamespace as sn
 from config.db import cursor, conn
 from typing import List, Optional
 
-STUDENT_COLUMNS = (
-    'sid', 'fname', 'lname', 'bod', 'address', 'cid', 'phone', 'email',
-    'gender', 'generation', 'img', 'departmental_class_id', 'major_id',
-    'graduated', 'active'
-)
-
-def _map_row_to_student(row: tuple) -> Optional[sn]:
-    if not row:
-        return None
-    return sn(**dict(zip(STUDENT_COLUMNS, row)))
 
 def get_all_students() -> List[sn]:
     query = "SELECT sid, fname, lname, bod, address, cid, phone, email, gender, generation, img, departmental_class_id, major_id, graduated, active FROM students"
     cursor.execute(query)
     rows = cursor.fetchall()
-    return [_map_row_to_student(row) for row in rows]
+    return [sn(**row) for row in rows]
 
 def get_student_by_sid(sid: str) -> Optional[sn]:
     query = "SELECT sid, fname, lname, bod, address, cid, phone, email, gender, generation, img, departmental_class_id, major_id, graduated, active FROM students WHERE sid = %s"
     cursor.execute(query, (sid,))
     row = cursor.fetchone()
-    return _map_row_to_student(row)
+    return sn(**row)
 
 def add_student(student: sn) -> bool:
     query = """
@@ -72,11 +62,11 @@ def get_students_by_major(major_id: int) -> List[sn]:
     query = "SELECT sid, fname, lname, bod, address, cid, phone, email, gender, generation, img, departmental_class_id, major_id, graduated, active FROM students WHERE major_id = %s"
     cursor.execute(query, (major_id,))
     rows = cursor.fetchall()
-    return [_map_row_to_student(row) for row in rows]
+    return [sn(**row) for row in rows]
 
 def get_students_by_departmental_class(class_id: str) -> List[sn]:
     query = "SELECT sid, fname, lname, bod, address, cid, phone, email, gender, generation, img, departmental_class_id, major_id, graduated, active FROM students WHERE departmental_class_id = %s"
     cursor.execute(query, (class_id,))
     rows = cursor.fetchall()
-    return [_map_row_to_student(row) for row in rows]
+    return [sn(**row) for row in rows]
 

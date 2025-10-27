@@ -2,24 +2,18 @@ from types import SimpleNamespace as sn
 from config.db import cursor, conn
 from typing import List, Optional, Any
 
-SUBJECT_COLUMNS = ('id', 'name', 'coff')
-
-def _map_row_to_subject(row: tuple) -> Optional[sn]:
-    if not row:
-        return None
-    return sn(**dict(zip(SUBJECT_COLUMNS, row)))
 
 def get_all_subjects() -> List[sn]:
     query = "SELECT id, name, coff FROM subjects"
     cursor.execute(query)
     rows = cursor.fetchall()
-    return [_map_row_to_subject(row) for row in rows]
+    return [sn(**row) for row in rows]
 
 def get_subject_by_id(id: str) -> Optional[sn]:
     query = "SELECT id, name, coff FROM subjects WHERE id = %s"
     cursor.execute(query, (id,))
     row = cursor.fetchone()
-    return _map_row_to_subject(row)
+    return sn(**row)
 
 def add_subject(id: str, name: str, coff: str) -> bool:
     query = "INSERT INTO subjects (id, name, coff) VALUES (%s, %s, %s)"

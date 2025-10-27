@@ -2,3 +2,5 @@
 README.md
 generated_xlsx
 static/images
+__pycache_
+.idea

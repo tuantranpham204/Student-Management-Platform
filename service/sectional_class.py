@@ -2,30 +2,23 @@ from types import SimpleNamespace as sn
 from config.db import cursor, conn
 from typing import List, Optional, Any
 
-SECTIONAL_CLASS_COLUMNS = ('id', 'name', 'semester_id', 'subject_id', 'major_id')
-
-def _map_row_to_class(row: tuple) -> Optional[sn]:
-    if not row:
-        return None
-    return sn(**dict(zip(SECTIONAL_CLASS_COLUMNS, row)))
-
 def get_all_classes() -> List[sn]:
     query = "SELECT id, name, semester_id, subject_id, major_id FROM sectional_classes"
     cursor.execute(query)
     rows = cursor.fetchall()
-    return [_map_row_to_class(row) for row in rows]
+    return [sn(**row) for row in rows]
 
 def get_class_by_id(id: int) -> Optional[sn]:
     query = "SELECT id, name, semester_id, subject_id, major_id FROM sectional_classes WHERE id = %s"
     cursor.execute(query, (id,))
     row = cursor.fetchone()
-    return _map_row_to_class(row)
+    return sn(**row)
 
 def get_classes_by_semester(semester_id: int) -> List[sn]:
     query = "SELECT id, name, semester_id, subject_id, major_id FROM sectional_classes WHERE semester_id = %s"
     cursor.execute(query, (semester_id,))
     rows = cursor.fetchall()
-    return [_map_row_to_class(row) for row in rows]
+    return [sn(**row) for row in rows]
 
 def add_class(name: str, semester_id: int, subject_id: str, major_id: int) -> Optional[int]:
     query = "INSERT INTO sectional_classes (name, semester_id, subject_id, major_id) VALUES (%s, %s, %s, %s)"

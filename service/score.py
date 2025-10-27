@@ -2,13 +2,6 @@ from types import SimpleNamespace as sn
 from config.db import cursor, conn
 from typing import List, Optional, Any
 
-SCORE_COLUMNS = ('sectional_class_id', 'student_id', 'regular1', 'regular2', 'regular3', 'midterm', 'final')
-
-def _map_row_to_score(row: tuple) -> Optional[sn]:
-    if not row:
-        return None
-    return sn(**dict(zip(SCORE_COLUMNS, row)))
-
 def get_all_scores() -> List[sn]:
     query = "SELECT sectional_class_id, student_id, regular1, regular2, regular3, midterm, final FROM scores"
     cursor.execute(query)
