@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS subjects(
 CREATE TABLE IF NOT EXISTS users(
     id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(30) UNIQUE,
-    password VARCHAR(50),
+    password VARCHAR(200),
     name VARCHAR(50),
     email VARCHAR(50)
 );

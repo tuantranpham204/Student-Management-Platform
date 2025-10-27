@@ -3,30 +3,24 @@ from config.db import cursor, conn
 from typing import List, Optional, Any
 from config.auth import hash_password, verify_password
 
-USER_COLUMNS = ('id', 'username', 'password', 'name', 'email')
-
-def _map_row_to_user(row: tuple) -> Optional[sn]:
-    if not row:
-        return None
-    return sn(**dict(zip(USER_COLUMNS, row)))
 
 def get_all_users() -> List[sn]:
     query = "SELECT id, username, password, name, email FROM users"
     cursor.execute(query)
     rows = cursor.fetchall()
-    return [_map_row_to_user(row) for row in rows]
+    return [sn(**row) for row in rows]
 
 def get_user_by_id(id: int) -> Optional[sn]:
     query = "SELECT id, username, password, name, email FROM users WHERE id = %s"
     cursor.execute(query, (id,))
     row = cursor.fetchone()
-    return _map_row_to_user(row)
+    return sn(**row)
 
 def get_user_by_username(username: str) -> Optional[sn]:
     query = "SELECT id, username, password, name, email FROM users WHERE username = %s"
-    cursor.execute(query, (username,))
+    cursor.execute(query, [username])
     row = cursor.fetchone()
-    return _map_row_to_user(row)
+    return sn(**row)
 
 def add_user(username: str, email: str, plain_password: str, name: Optional[str] = None) -> Optional[int]:
     hashed_pass = hash_password(plain_password)
@@ -41,9 +35,5 @@ def update_user(id: int, username: str, email: str, name: Optional[str] = None) 
     conn.commit()
     return True
 
-def verify_user_login(username: str, plain_password: str) -> Optional[sn]:
-    user = get_user_by_username(username)
-    if user and verify_password(plain_password, user.password):
-        return user
-    return None
+
 
