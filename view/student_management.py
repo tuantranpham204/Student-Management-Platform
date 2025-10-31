@@ -1,6 +1,8 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkcalendar import DateEntry
+import util.util as util
+import service.student as student_service
 
 class StudentManagement(tk.Frame):
     def __init__(self, parent):
@@ -9,289 +11,211 @@ class StudentManagement(tk.Frame):
         self.widgets()
 
     def widgets(self):
-        self.info_frame = tk.Frame(self)
-        self.info_frame.grid_propagate(False)
-        self.list_frame = tk.Frame(self)
 
-        # self.info_frame.config(width=100, height=100)
-        # self.list_frame.config(width=100, height=100)
+        self.fr_info = tk.Frame(self)
+        # self.fr_info.grid_propagate(False)
 
-        self.info_frame.grid(row=0, column=0, padx=10, pady=10)
-        self.list_frame.grid(row=0, column=1, padx=10, pady=10)
+        self.fr_lst = tk.Frame(self)
+
+        # self.fr_info.config(width=100, height=100)
+        # self.fr_lst.config(width=100, height=100)
+
+        self.fr_info.grid(row=0, column=0, padx=10, pady=10)
+        self.fr_lst.grid(row=1, column=0, padx=10, pady=10)
 
 
         # process student profile pic
-        self.pro5_pic = tk.Canvas(self.info_frame, width=140, height=220)
-        self.pro5_pic.grid(row=1, column=0, rowspan=6)
+        self.fr_pro5 = tk.Frame(self.fr_info)
+        self.fr_pro5.grid(row=0, column=0, padx=10, pady=10)
+        self.pro5_pic = tk.Canvas(self.fr_pro5, width=140, height=220)
+        self.pro5_pic.grid(row=0, column=0, rowspan=6, padx=10, pady=10)
 
-        self.btn_pro5_pic = tk.Button(self.info_frame, text='Select student profile picture')
-        self.btn_pro5_pic.grid(row=2, column=0, padx=5, pady=5)
+        self.btn_pro5_pic = tk.Button(self.fr_pro5, text='Select student profile picture')
+        self.btn_pro5_pic.grid(row=1, column=0, padx=5, pady=5)
+
+        # student input fields
+        self.fr_inp = tk.Frame(self.fr_info)
+        self.fr_inp.grid(row=0, column=1, padx=10, pady=10)
+        
+        self.lbl_sid = tk.Label(self.fr_inp, text='Student ID: ', anchor='w')
+        self.lbl_sid.grid(row=0, column=0, padx=10, pady=10, sticky='w')
+        self.ent_sid = tk.Entry(self.fr_inp, width=30)
+        self.ent_sid.grid(row=0, column=1, padx=10, pady=10)
+
+        self.lbl_fname = tk.Label(self.fr_inp, text='First name: ', anchor='w')
+        self.lbl_fname.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+        self.ent_fname = tk.Entry(self.fr_inp, width=30)
+        self.ent_fname.grid(row=1, column=1, padx=10, pady=10)
+
+        self.lbl_lname = tk.Label(self.fr_inp, text='Last name: ', anchor='w')
+        self.lbl_lname.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+        self.ent_lname = tk.Entry(self.fr_inp, width=30)
+        self.ent_lname.grid(row=2, column=1, padx=10, pady=10)
+
+        self.lbl_cid = tk.Label(self.fr_inp, text='Citizen ID: ', anchor='w')
+        self.lbl_cid.grid(row=3, column=0, padx=10, pady=10, sticky='w')
+        self.ent_cid = tk.Entry(self.fr_inp, width=30)
+        self.ent_cid.grid(row=3, column=1, padx=10, pady=10)
+
+        self.lbl_addr = tk.Label(self.fr_inp, text='Address: ', anchor='w')
+        self.lbl_addr.grid(row=4, column=0, padx=10, pady=10, sticky='w')
+        self.ent_addr = tk.Entry(self.fr_inp, width=30)
+        self.ent_addr.grid(row=4, column=1, padx=10, pady=10)
+
+        self.lbl_phone = tk.Label(self.fr_inp, text='Phone: ', anchor='w')
+        self.lbl_phone.grid(row=5, column=0, padx=10, pady=10, sticky='w')
+        self.ent_phone = tk.Entry(self.fr_inp, width=30)
+        self.ent_phone.grid(row=5, column=1, padx=10, pady=10)
+
+        self.lbl_email = tk.Label(self.fr_inp, text='Email: ', anchor='w')
+        self.lbl_email.grid(row=6, column=0, padx=10, pady=10, sticky='w')
+        self.ent_email = tk.Entry(self.fr_inp, width=30)
+        self.ent_email.grid(row=6, column=1, padx=10, pady=10)
+
+        self.lbl_gender = tk.Label(self.fr_inp, text='Gender: ', anchor='w')
+        self.lbl_gender.grid(row=7, column=0, padx=10, pady=10, sticky='w')
+        self.fr_rad_gender = tk.Frame(self.fr_inp, width=30)
+        self.fr_rad_gender.grid(row=7, column=1, padx=10, pady=10)
+        self.gender = tk.BooleanVar(value=True)
+        self.rad_btn_m = tk.Radiobutton(self.fr_rad_gender, text='Male', variable=self.gender, value=True)
+        self.rad_btn_m.grid(row=0, column=0, padx=10, pady=10)
+        self.rad_btn_f = tk.Radiobutton(self.fr_rad_gender, text='Female', variable=self.gender, value=False)
+        self.rad_btn_f.grid(row=0, column=1, padx=10, pady=10)
+
+        self.lbl_dob = tk.Label(self.fr_inp, text='Date of Birth: ', anchor='w')
+        self.lbl_dob.grid(row=8, column=0, padx=10, pady=10, sticky='w')
+        self.ent_dob = DateEntry(self.fr_inp, date_pattern="dd/mm/yyyy", anchor=tk.CENTER)
+        self.ent_dob.grid(row=8, column=1, padx=10, pady=10)
+
+        # uni info
+
+        self.lbl_gen = tk.Label(self.fr_inp, text='Generation: ', anchor='w')
+        self.lbl_gen.grid(row=0, column=2, padx=10, pady=10, sticky='w')
+        self.gen_int = int()
+        self.ent_gen =  tk.ttk.Combobox(self.fr_inp, textvariable=tk.StringVar(value=(util.gen_K(self.gen_int))), state='readonly', width=30)
+        self.ent_gen.grid(row=0, column=3, padx=10, pady=10)
+
+        self.lbl_status = tk.Label(self.fr_inp, text='Status: ', anchor='w')
+        self.lbl_status.grid(row=1, column=2, padx=10, pady=10, sticky='w')
+        self.ent_status = tk.Entry(self.fr_inp, width=30)
+        self.status_int = int()
+        self.sel_status = tk.ttk.Combobox(self.fr_inp, textvariable=tk.StringVar(value = util.status[str(self.status_int)]), state='readonly', width=30)
+        self.sel_status.grid(row=1, column=3, padx=10, pady=10)
+
+        self.lbl_maj = tk.Label(self.fr_inp, text='Major: ', anchor='w')
+        self.lbl_maj.grid(row=3, column=2, padx=10, pady=10, sticky='w')
+        self.maj = {"id": int(), "name": tk.StringVar()}
+        self.sel_maj = tk.ttk.Combobox(self.fr_inp, textvariable=self.maj["name"], state='readonly', width=30)
+        self.sel_maj.grid(row=3, column=3, padx=10, pady=10)
+
+        self.lbl_dep = tk.Label(self.fr_inp, text='Department: ', anchor='w')
+        self.lbl_dep.grid(row=2, column=2, padx=10, pady=10, sticky='w')
+        self.dep = {"id": int(), "name": tk.StringVar()}
+        self.sel_dep = tk.ttk.Combobox(self.fr_inp, textvariable=self.dep["name"], state='readonly', width=30)
+        self.sel_dep.grid(row=2, column=3, padx=10, pady=10)
+
+        self.lbl_dep_cls = tk.Label(self.fr_inp, text='Departmental class: ', anchor='w')
+        self.lbl_dep_cls.grid(row=4, column=2, padx=10, pady=10, sticky='w')
+        self.dep_cls = {"id": int(), "name": tk.StringVar()}
+        self.sel_dep_cls = tk.ttk.Combobox(self.fr_inp, textvariable=self.dep_cls["name"], state='readonly', width=30)
+        self.sel_dep_cls.grid(row=4, column=3, padx=10, pady=10)
+
+        self.lbl_sec_cls = tk.Label(self.fr_inp, text='Sectional class: ', anchor='w')
+        self.lbl_sec_cls.grid(row=5, column=2, padx=10, pady=10, sticky='w')
+        self.sec_cls = [{"id": int(), "name": tk.StringVar()}]
+        self.sel_sec_cls = tk.ttk.Combobox(self.fr_inp, textvariable=self.sec_cls[0]["name"], state='readonly', width=30)
+        self.sel_sec_cls.grid(row=5, column=3, padx=10, pady=10)
+        self.txt_sec_cls = tk.Text(self.fr_inp,width=40, height=1, state=tk.DISABLED)
+        self.txt_sec_cls.grid(row=6, column=2, padx=10, pady=10, columnspan=2, sticky='w')
+
+        self.fr_btn = tk.Frame(self.fr_inp)
+        self.fr_btn.grid(row=7, column=2, padx=10, pady=10, columnspan=2, rowspan=2)
+
+        self.btn_add = tk.Button(self.fr_btn, text='Add student', padx=10, pady=10)
+        self.btn_add.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
+
+        self.btn_upd = tk.Button(self.fr_btn, text='Update student', padx=10, pady=10)
+        self.btn_upd.grid(row=0, column=1, padx=10, pady=10, sticky='nsew')
+
+        self.btn_clr = tk.Button(self.fr_btn, text='Refresh', padx=10, pady=10)
+        self.btn_clr.grid(row=1, column=0, padx=10, pady=10, sticky='nsew')
+
+        self.btn_search = tk.Button(self.fr_btn, text='Search student', padx=10, pady=10)
+        self.btn_search.grid(row=1, column=1, padx=10, pady=10, sticky='nsew')
+
+        self.btn_xls = tk.Button(self.fr_btn, text='Extract to XLSX', padx=10, pady=10)
+        self.btn_xls.grid(row=2, column=0, padx=10, pady=10, sticky='nsew')
+
+        self.btn_all = tk.Button(self.fr_btn, text='Get all student', padx=10, pady=10, command=self.get_all_students)
+        self.btn_all.grid(row=2, column=1, padx=10, pady=10, sticky='nsew')
 
 
 
-    # def widgets(self):
-    #     # self.btn1 = tk.Button(self,text='hihi',bg='red')
-    #     # self.btn1.grid(row=0,column=1)
-    #     self.frame1 = tk.Frame(self, bg='#D5F0D4', borderwidth=1.5, relief='solid')
-    #     self.frame1.grid(row=0, column=0, sticky='nsew')
-    #     # Ngăn không cho frame1 mở rộng
-    #     self.frame1.grid_propagate(False)
-    #
-    #     # self.btn = tk.Button(self.frame1,text='xx')
-    #     # self.btn.grid(row=0,column=0)
-    #     self.frame2 = tk.Frame(self, bg='#83CAFF', borderwidth=1.5, relief='solid')
-    #     self.frame2.grid(row=0, column=2, sticky='nsew')
-    #     # Ngăn không cho frame2 mở rộng
-    #     self.frame2.grid_propagate(False)
-    #     # self.btn2 = tk.Button(self.frame2,text='yy')
-    #     # self.btn2.grid(row=0,column=0)
-    #     self.grid_rowconfigure(0, weight=1)
-    #     self.grid_columnconfigure(0, weight=45)
-    #     self.grid_columnconfigure(1, weight=1)
-    #     self.grid_columnconfigure(2, weight=54)
-    #
-    #
-    #     # Widgets in frame1
-    #     # Frame1_1
-    #     self.frame1_1 = tk.Frame(self.frame1)
-    #     self.frame1_1.grid(row=0, column=0, sticky='nsew')
-    #     self.frame1_1.grid_propagate(False)
-    #
-    #     # Frame1_2
-    #     self.frame1_2 = tk.Frame(self.frame1)
-    #     self.frame1_2.grid(row=1, column=0, sticky='nsew')
-    #     self.frame1_2.grid_propagate(False)
-    #
-    #     # Frame1_3
-    #     self.frame1_3 = tk.Frame(self.frame1)
-    #     self.frame1_3.grid(row=2, column=0, sticky='nsew')
-    #     self.frame1_3.grid_propagate(False)
-    #
-    #     self.frame1.grid_columnconfigure(0, weight=1)
-    #     self.frame1.grid_rowconfigure(0, weight=50)
-    #     self.frame1.grid_rowconfigure(1, weight=40)
-    #     self.frame1.grid_rowconfigure(2, weight=10)
-    #
-    #     # Widgets in frame1_1
-    #     # Title
-    #     self.title1_1 = tk.Label(self.frame1_1, text="Thông tin cá nhân")
-    #     self.title1_1.grid(row=0, column=0, columnspan=5, pady=10, sticky='we')
-    #     # Content
-    #
-    #     # Xử lý ảnh
-    #     self.canvas = tk.Canvas(self.frame1_1, width=140, height=220)
-    #     self.canvas.grid(row=1, column=0, rowspan=6)
-    #
-    #     self.btn_select_image = tk.Button(self.frame1_1, text='Chọn ảnh')
-    #     self.btn_select_image.grid(row=7, column=0, padx=5, pady=5)
-    #
-    #     self.lbl_id = tk.Label(self.frame1_1, text='Mã sinh viên')
-    #     self.lbl_id.grid(row=1, column=1, padx=5, pady=5, sticky='w')
-    #
-    #     self.ent_id = tk.Entry(self.frame1_1)
-    #     self.ent_id.grid(row=1, column=2, padx=5, pady=5)
-    #
-    #     self.lbl_name = tk.Label(self.frame1_1, text='Họ và tên')
-    #     self.lbl_name.grid(row=2, column=1, padx=5, pady=5, sticky='w')
-    #
-    #     self.ent_name = tk.Entry(self.frame1_1)
-    #     self.ent_name.grid(row=2, column=2, padx=5, pady=5)
-    #
-    #     self.lbl_birth = tk.Label(self.frame1_1, text='Ngày sinh')
-    #     self.lbl_birth.grid(row=3, column=1, padx=5, pady=5, sticky='w')
-    #
-    #     # Vấn đề
-    #     self.date_birth = DateEntry(self.frame1_1, date_pattern="dd/mm/yyyy")
-    #     self.date_birth.grid(row=3, column=2, padx=5, pady=5, sticky='w')
-    #
-    #     self.lbl_address = tk.Label(self.frame1_1, text='Địa chỉ')
-    #     self.lbl_address.grid(row=4, column=1, padx=5, pady=5, sticky='w')
-    #
-    #     self.ent_address = tk.Entry(self.frame1_1)
-    #     self.ent_address.grid(row=4, column=2, padx=5, pady=5)
-    #
-    #     self.lbl_cccd = tk.Label(self.frame1_1, text='CCCD')
-    #     self.lbl_cccd.grid(row=5, column=1, padx=5, pady=5, sticky='w')
-    #
-    #     self.ent_cccd = tk.Entry(self.frame1_1)
-    #     self.ent_cccd.grid(row=5, column=2, padx=5, pady=5)
-    #
-    #     self.lbl_phone = tk.Label(self.frame1_1, text='Số điện thoại')
-    #     self.lbl_phone.grid(row=6, column=1, padx=5, pady=5, sticky='w')
-    #
-    #     self.ent_phone = tk.Entry(self.frame1_1)
-    #     self.ent_phone.grid(row=6, column=2, padx=5, pady=5)
-    #
-    #     self.lbl_email = tk.Label(self.frame1_1, text='Email')
-    #     self.lbl_email.grid(row=1, column=3, padx=5, pady=5, sticky='w')
-    #
-    #     self.ent_email = tk.Entry(self.frame1_1)
-    #     self.ent_email.grid(row=1, column=4, padx=5, pady=5)
-    #
-    #     self.lbl_gender = tk.Label(self.frame1_1, text='Giới tính')
-    #     self.lbl_gender.grid(row=2, column=3, padx=5, pady=5, sticky='w')
-    #
-    #     self.gender = tk.StringVar()  # Biến lưu giá trị được chọn
-    #     self.combo_gender = ttk.Combobox(self.frame1_1, textvariable=self.gender, state='readonly')
-    #     self.combo_gender['values'] = ['Nam', 'Nữ']
-    #     self.combo_gender.current(0)
-    #     self.combo_gender.grid(row=2, column=4, padx=5, pady=5, sticky='w')
-    #
-    #     self.frame1_1.grid_columnconfigure(0, weight=40)
-    #     self.frame1_1.grid_columnconfigure(1, weight=15)
-    #     self.frame1_1.grid_columnconfigure(2, weight=15)
-    #     self.frame1_1.grid_columnconfigure(3, weight=15)
-    #     self.frame1_1.grid_columnconfigure(4, weight=15)
-    #
-    #     # Widgets in frame1_2
-    #     self.frame1_2.grid_columnconfigure(0, weight=25)
-    #     self.frame1_2.grid_columnconfigure(1, weight=25)
-    #     self.frame1_2.grid_columnconfigure(2, weight=25)
-    #     self.frame1_2.grid_columnconfigure(3, weight=25)
-    #
-    #     self.title1_2 = tk.Label(self.frame1_2, text='Thông tin học tập')
-    #     self.title1_2.grid(row=0, column=0, columnspan=4, padx=5, pady=5)
-    #
-    #     # Department
-    #     self.lbl_department = tk.Label(self.frame1_2, text='Khoa')
-    #     self.lbl_department.grid(row=1, column=0, padx=5, pady=5, sticky='w')
-    #
-    #     self.department = tk.StringVar()
-    #     self.combo_department = ttk.Combobox(self.frame1_2, textvariable=self.department, state='readonly')
-    #     self.combo_department.grid(row=1, column=1, padx=5, pady=5, sticky='w')
-    #
-    #     # Major
-    #     self.lbl_major = tk.Label(self.frame1_2, text='Chuyên ngành')
-    #     self.lbl_major.grid(row=2, column=0, padx=5, pady=5, sticky='w')
-    #
-    #     self.major = tk.StringVar()
-    #     self.combo_major = ttk.Combobox(self.frame1_2, textvariable=self.major, state='readonly')
-    #     self.combo_major.grid(row=2, column=1, padx=5, pady=5, sticky='w')
-    #
-    #     # Class
-    #     self.lbl_class = tk.Label(self.frame1_2, text='Lớp')
-    #     self.lbl_class.grid(row=1, column=2, padx=5, pady=5, sticky='w')
-    #
-    #     self.classs = tk.StringVar()
-    #     self.combo_class = ttk.Combobox(self.frame1_2, textvariable=self.classs, state='readonly')
-    #     self.combo_class.grid(row=1, column=3, padx=5, pady=5, sticky='w')
-    #
-    #     # Generation
-    #     self.lbl_gen = tk.Label(self.frame1_2, text='Khóa')
-    #     self.lbl_gen.grid(row=2, column=2, padx=5, pady=5, sticky='w')
-    #
-    #     self.gen = tk.StringVar()
-    #     self.combo_gen = ttk.Combobox(self.frame1_2, textvariable=self.gen, state='readonly')
-    #     self.combo_gen.grid(row=2, column=3, padx=5, pady=5, sticky='w')
-    #     self.combo_gen['values'] = ['K14', 'K15', 'K16', 'K17', 'K18', 'K19']
-    #     self.combo_gen.current(0)
-    #
-    #     # Widgets in frame1_3
-    #     self.frame1_3.grid_columnconfigure(0, weight=25)
-    #     self.frame1_3.grid_columnconfigure(1, weight=25)
-    #     self.frame1_3.grid_columnconfigure(2, weight=25)
-    #     self.frame1_3.grid_columnconfigure(3, weight=25)
-    #
-    #     self.student_btn_add = tk.Button(self.frame1_3, text='Thêm', width=15)
-    #     self.student_btn_add.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
-    #
-    #     self.student_btn_update = tk.Button(self.frame1_3, text='Sửa', width=15, state='disabled')
-    #     self.student_btn_update.grid(row=0, column=1, padx=5, pady=5, sticky='nsew')
-    #
-    #     self.student_btn_delete = tk.Button(self.frame1_3, text='Xóa', width=15, state='disabled')
-    #     self.student_btn_delete.grid(row=0, column=2, padx=5, pady=5, sticky='nsew')
-    #
-    #     self.student_btn_refresh = tk.Button(self.frame1_3, text='Làm mới', width=15)
-    #     self.student_btn_refresh.grid(row=0, column=3, padx=5, pady=5, sticky='nsew')
-    #
-    #     self.student_btn_back = tk.Button(self.frame1_3, text='Quay lại', width=15)
-    #     self.student_btn_back.grid(row=1, column=0, padx=5, pady=5, sticky='nsew')
-    #
-    #     # Widgets in frame2
-    #     self.frame2_1 = tk.Frame(self.frame2)
-    #     self.frame2_1.grid(row=0, column=0, sticky='nsew')
-    #     self.frame2_1.grid_propagate(False)
-    #
-    #     self.frame2_2 = tk.Frame(self.frame2)
-    #     self.frame2_2.grid(row=1, column=0, sticky='nsew')
-    #     self.frame2_2.grid_propagate(False)
-    #
-    #     self.frame2.grid_columnconfigure(0, weight=1)
-    #     self.frame2.grid_rowconfigure(0, weight=10)
-    #     self.frame2.grid_rowconfigure(1, weight=90)
-    #
-    #     # Widgets in frame2_1
-    #     self.lbl_find = tk.Label(self.frame2_1, text='Tìm kiếm theo')
-    #     self.lbl_find.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
-    #
-    #     self.find = tk.StringVar()
-    #     self.combo_find = ttk.Combobox(self.frame2_1, textvariable=self.find, state='readonly')
-    #     self.combo_find['values'] = ['Mã sinh viên', 'Tên sinh viên', 'Chuyên ngành', 'Khóa', 'Lớp']
-    #     self.combo_find.current(0)
-    #     self.combo_find.grid(row=0, column=1, padx=5, pady=5, sticky='nsew')
-    #
-    #     self.ent_find = tk.Entry(self.frame2_1)
-    #     self.ent_find.grid(row=0, column=2, padx=5, pady=5, sticky='nsew')
-    #
-    #     self.btn_find = tk.Button(self.frame2_1, text='Tìm kiếm')
-    #     self.btn_find.grid(row=0, column=3, padx=5, pady=5, sticky='nsew')
-    #
-    #     self.btn_showall = tk.Button(self.frame2_1, text='Xem tất cả')
-    #     self.btn_showall.grid(row=0, column=4, padx=5, pady=5, sticky='nsew')
-    #
-    #     self.btn_export = tk.Button(self.frame2_1, text='Xuất danh sách')
-    #     self.btn_export.grid(row=0, column=5, padx=5, pady=5, sticky='nsew')
-    #
-    #     # self.frame2_1.grid_rowconfigure(0,weight=1)
-    #     for i in range(6):
-    #         self.frame2_1.grid_columnconfigure(i, weight=16)
-    #
-    #     # Widgets in frame2_2
-    #     self.frame2_2.grid_columnconfigure(0, weight=1)
-    #     self.frame2_2.grid_rowconfigure(0, weight=1)
-    #
-    #     columns = ('stt', 'student_id', 'name', 'gender', 'birth', 'generation', 'major', 'class', 'gpa')
-    #     self.tree = ttk.Treeview(self.frame2_2, columns=columns, show='headings')
-    #     self.tree.grid(row=0, column=0, sticky='nsew')
-    #
-    #     self.tree.heading('stt', text='STT')
-    #     self.tree.heading('student_id', text='Mã sinh viên')
-    #     self.tree.heading('name', text='Họ và tên')
-    #     self.tree.heading('gender', text='Giới tính')
-    #     self.tree.heading('birth', text='Ngày sinh')
-    #     self.tree.heading('generation', text='Khóa')
-    #     self.tree.heading('major', text='Chuyên ngành')
-    #     self.tree.heading('class', text='Lớp')
-    #     self.tree.heading('gpa', text='GPA')
-    #
-    #     # Điều chỉnh width các cột
-    #     total_width = self.frame2_2.winfo_width()  # Lấy chiều rộng khung cha (frame2_2)
-    #     num_cols = len(self.tree["columns"])  # Số lượng cột
-    #     col_width = total_width // num_cols  # Chia đều cho các cột
-    #
-    #     for col in self.tree["columns"]:
-    #         self.tree.column(col, width=col_width, stretch=True)
-    #
-    #     # self.tree.column('stt',width=20,stretch=True,anchor='center')
-    #     # self.tree.column('student_id',width=80,stretch=True,anchor='center')
-    #     # self.tree.column('name',width=100,stretch=True,anchor='w')
-    #     # self.tree.column('gender',width=50,stretch=True,anchor='center')
-    #     # self.tree.column('birth',width=60,stretch=True,anchor='center')
-    #     # self.tree.column('generation',width=25,stretch=True,anchor='center')
-    #     # self.tree.column('major',width=95,stretch=True,anchor='w')
-    #     # self.tree.column('class',width=60,stretch=True,anchor='center')
-    #
-    #     # Thêm scroll bar
-    #     self.scrollbar_x = ttk.Scrollbar(self.frame2_2, orient="horizontal", command=self.tree.xview)
-    #     self.scrollbar_y = ttk.Scrollbar(self.frame2_2, orient="vertical", command=self.tree.yview)
-    #
-    #     self.tree.configure(xscrollcommand=self.scrollbar_x.set, yscrollcommand=self.scrollbar_y.set)
-    #
-    #     self.scrollbar_x.pack(side="bottom", fill="x")
-    #     self.scrollbar_y.pack(side="right", fill="y")
+        # list frame
+
+        self.lst = ttk.Treeview(self.fr_lst, columns=("ord",) + util.attrs.student, show='headings')
+        self.lst.grid(row=1, column=0, sticky='nsew', columnspan=2)
+
+        # Create scrollbars as children of self.fr_lst
+        self.scrollbar_y = ttk.Scrollbar(self.fr_lst, orient="vertical", command=self.lst.yview)
+        self.scrollbar_x = ttk.Scrollbar(self.fr_lst, orient="horizontal", command=self.lst.xview)
+
+        # Place scrollbars in the grid
+        self.scrollbar_y.grid(row=1, column=1, sticky='ns')  # Next to the list (column 1)
+        self.scrollbar_x.grid(row=2, column=0, sticky='ew')  # Below the list (row 2)
+
+        # Configure the Treeview to use them
+        self.lst.configure(yscrollcommand=self.scrollbar_y.set, xscrollcommand=self.scrollbar_x.set)
+
+        # Make the grid row/column containing the Treeview expandable
+        # This is key for the scrollbars to work as the window resizes
+        self.fr_lst.grid_rowconfigure(1, weight=1)
+        self.fr_lst.grid_columnconfigure(0, weight=1)
+
+        self.lst.heading("ord", text="Order")
+        for head, attr in zip(util.headings.student, util.attrs.student):
+            self.lst.heading(attr, text=head)
+
+        total_width = self.parent.winfo_width()  # Lấy chiều rộng khung cha (frame2_2)
+        num_cols = len(self.lst["columns"])  # Số lượng cột
+        col_width = total_width // num_cols  # Chia đều cho các cột
+
+
+
+        self.lst.column('ord', width=50, stretch=True)
+        for attr in util.attrs.student:
+            #self.lst.column(col, width=col_width, stretch=True)
+            self.lst.column(attr, width=125, stretch=True)
+
+
+    def get_all_students(self):
+        students_sn = student_service.get_all_students()
+        students = [vars(student) for student in students_sn]
+        for i in range(len(students)):
+            self.lst.insert('',tk.END,values=((i+1, )+tuple(students[i].values())))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 root = tk.Tk()
+root.resizable(True, True)
 management = StudentManagement(root)
-management.pack()
+management.grid(column=0, row=0)
 root.mainloop()

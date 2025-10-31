@@ -67,11 +67,11 @@ VALUES
 
 -- 4. Students (depends on majors)
 -- Note: Mapped student_name -> fname, lname. Mapped gender -> BIT (1=Nam, 0=Nữ/Khác). Mapped generation -> INT.
-INSERT INTO students (sid, fname, lname, dob, address, cid, phone, email, gender, generation, graduated, active ,img, departmental_class_id)
+INSERT INTO students (sid, fname, lname, dob, address, cid, phone, email, gender, generation, status,img, departmental_class_id)
 VALUES
-('2022602800','Lưu Công','Vinh','2004-11-12','Hà Nội','001204056492','0348341246','vinh01@gmail.com',1,17, 0, 1, 'D:/hoc/images/Luu Cong Vinh.jpg','2022CNTT02'),
-('2022602801','Nguyễn Anh','Quân','2004-04-25','Hà Nội','001204056493','0348341247','vinh02@gmail.com',0,17, 0, 1,'D:/hoc/images/Nguyen Anh Quan.jpg','2022KTQT01'),
-('2022602802','Nguyễn Anh','Lạc','2000-04-25','Hà Nội','001204056494','0348341248','vinh03@gmail.com',0,15,0, 1,'D:/hoc/images/Nguyen Anh Lac.jpg','2022KDQT02');
+('2022602800','Lưu Công','Vinh','2004-11-12','Hà Nội','001204056492','0348341246','vinh01@gmail.com',1,17, '1', 'D:/hoc/images/Luu Cong Vinh.jpg','2022CNTT02'),
+('2022602801','Nguyễn Anh','Quân','2004-04-25','Hà Nội','001204056493','0348341247','vinh02@gmail.com',0,17, '1','D:/hoc/images/Nguyen Anh Quan.jpg','2022KTQT01'),
+('2022602802','Nguyễn Anh','Lạc','2000-04-25','Hà Nội','001204056494','0348341248','vinh03@gmail.com',0,15,'1','D:/hoc/images/Nguyen Anh Lac.jpg','2022KDQT02');
 
 -- 5. Scores (depends on students and sectional_classes)
 -- Note: Mapped score_regular -> regular1

@@ -87,8 +87,7 @@ CREATE TABLE IF NOT EXISTS students(
     email VARCHAR(100) UNIQUE,
     gender BIT,
     generation INT,
-    graduated BIT,
-    active BIT, 
+    status ENUM('-1', '0','1','2'),
     img VARCHAR(500),
     departmental_class_id VARCHAR(20) NOT NULL, -- CORRECTED: Changed type from INT to VARCHAR(200
     FOREIGN KEY (departmental_class_id) REFERENCES departmental_classes(id)

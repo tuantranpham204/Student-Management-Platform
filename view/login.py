@@ -64,7 +64,7 @@ class LoginView(tk.Frame):
                 messagebox.showinfo('Success', 'You are now logged in')
                 self.grid_forget()
                 user_dashboard = UserDashboard(self.parent, user.name)
-                user_dashboard.pack()
+                user_dashboard.grid(column=0, row=0, padx=10, pady=10)
                 return
             else:
                 messagebox.showerror('Error', 'Incorrect password')

@@ -31,15 +31,28 @@ class UserDashboard(tk.Frame):
         for i in range(1, 3):  # 2 hàng
             self.grid_rowconfigure(i, weight=45)
         for i in range(2):  # 2 cột
-            self.grid_columnconfigure(i, weight=50)\
+            self.grid_columnconfigure(i, weight=50)
 
     def log_out(self):
         from view.login import LoginView
-        self.grid_forget()
+        self.clear_frame()
         self.login_view = LoginView(self.parent)
-        self.login_view.grid(row=0, column=0)
+        self.login_view.grid(row=0, column=0, padx=10, pady=10)
+
 
     def to_students_management(self):
+        self.clear_frame()
+        self.parent.geometry("")
         from view.student_management import StudentManagement
         self.student_management = StudentManagement(self.parent)
-        self.student_management.grid(row=0, column=0)
+        self.student_management.grid(row=0, column=0, padx=10, pady=10)
+
+    def clear_frame(self):
+        parent = self.parent
+        if isinstance(parent, tk.Tk):
+            for widget in self.parent.winfo_children():
+                widget.destroy()
+
+
+
+
