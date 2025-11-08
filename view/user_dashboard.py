@@ -34,15 +34,21 @@ class UserDashboard(tk.Frame):
             self.grid_columnconfigure(i, weight=50)
 
     def log_out(self):
+        self.grid_forget()
+        self.parent.title('Student Management')
+        self.parent.geometry("2000x1000")
+        self.parent.resizable(True, True)
+        self.parent.grid_rowconfigure(0, weight=1)
+        self.parent.grid_columnconfigure(0, weight=1)
+        self.parent.configure(bg=default_vals.DEFAULT_BG_COLOR)
         from view.login import LoginView
-        self.clear_frame()
         self.login_view = LoginView(self.parent)
         self.login_view.grid(row=0, column=0, padx=10, pady=10)
 
 
     def to_students_management(self):
         self.clear_frame()
-        self.parent.geometry("")
+        self.parent.geometry("2000x1000")
         from view.student_management import StudentManagement
         self.student_management = StudentManagement(self.parent)
         self.student_management.grid(row=0, column=0, padx=10, pady=10)

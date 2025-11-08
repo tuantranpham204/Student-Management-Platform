@@ -1,8 +1,12 @@
 import tkinter as tk
 import tkinter.ttk as ttk
+from tkinter import messagebox
+
 from tkcalendar import DateEntry
 import util.util as util
 import service.student as student_service
+from types import SimpleNamespace as sn
+import re
 
 class StudentManagement(tk.Frame):
     def __init__(self, parent):
@@ -131,7 +135,7 @@ class StudentManagement(tk.Frame):
         self.fr_btn = tk.Frame(self.fr_inp)
         self.fr_btn.grid(row=7, column=2, padx=10, pady=10, columnspan=2, rowspan=2)
 
-        self.btn_add = tk.Button(self.fr_btn, text='Add student', padx=10, pady=10)
+        self.btn_add = tk.Button(self.fr_btn, text='Add student', padx=10, pady=10, command=self.add_student)
         self.btn_add.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
 
         self.btn_upd = tk.Button(self.fr_btn, text='Update student', padx=10, pady=10)
@@ -140,7 +144,7 @@ class StudentManagement(tk.Frame):
         self.btn_clr = tk.Button(self.fr_btn, text='Refresh', padx=10, pady=10)
         self.btn_clr.grid(row=1, column=0, padx=10, pady=10, sticky='nsew')
 
-        self.btn_search = tk.Button(self.fr_btn, text='Search student', padx=10, pady=10)
+        self.btn_search = tk.Button(self.fr_btn, text='Search student', padx=10, pady=10, command=self.search_student)
         self.btn_search.grid(row=1, column=1, padx=10, pady=10, sticky='nsew')
 
         self.btn_xls = tk.Button(self.fr_btn, text='Extract to XLSX', padx=10, pady=10)
@@ -155,6 +159,17 @@ class StudentManagement(tk.Frame):
 
         self.lst = ttk.Treeview(self.fr_lst, columns=("ord",) + util.attrs.student, show='headings')
         self.lst.grid(row=1, column=0, sticky='nsew', columnspan=2)
+
+        self.lst.heading("ord", text="Order")
+        for head, attr in zip(util.headings.student, util.attrs.student):
+            self.lst.heading(attr, text=head)
+
+        col_width = ( self.parent.winfo_width() // len(util.attrs.student))
+
+        self.lst.column('ord', width=50, stretch=True)
+        for attr in util.attrs.student:
+            self.lst.column(attr, width=col_width, stretch=True)
+            # self.lst.column(attr, width=125, stretch=True)
 
         # Create scrollbars as children of self.fr_lst
         self.scrollbar_y = ttk.Scrollbar(self.fr_lst, orient="vertical", command=self.lst.yview)
@@ -172,50 +187,68 @@ class StudentManagement(tk.Frame):
         self.fr_lst.grid_rowconfigure(1, weight=1)
         self.fr_lst.grid_columnconfigure(0, weight=1)
 
-        self.lst.heading("ord", text="Order")
-        for head, attr in zip(util.headings.student, util.attrs.student):
-            self.lst.heading(attr, text=head)
 
-        total_width = self.parent.winfo_width()  # Lấy chiều rộng khung cha (frame2_2)
-        num_cols = len(self.lst["columns"])  # Số lượng cột
-        col_width = total_width // num_cols  # Chia đều cho các cột
+    def categorize(self, students_sn:list):
+        for student in students_sn:
+            if student.gender == False:
+                student.gender = 'Female'
+            else: student.gender = 'Male'
+            student.generation = util.gen_K(student.generation)
+        return students_sn
 
-
-
-        self.lst.column('ord', width=50, stretch=True)
-        for attr in util.attrs.student:
-            #self.lst.column(col, width=col_width, stretch=True)
-            self.lst.column(attr, width=125, stretch=True)
+    def validate(self):
+        email = self.ent_email.get().strip()
+        phone = self.ent_phone.get().strip()
+        if email and not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+            messagebox.showerror(title='Invalid Email', message='Please enter a valid email address.')
+        if phone and not re.match(r'^\d+$', phone):
+            messagebox.showerror(title='Invalid Phone', message='Please enter a valid phone number.')
 
 
     def get_all_students(self):
+        self.empty_lst()
         students_sn = student_service.get_all_students()
+        students_sn = self.categorize(students_sn)
         students = [vars(student) for student in students_sn]
         for i in range(len(students)):
             self.lst.insert('',tk.END,values=((i+1, )+tuple(students[i].values())))
 
+    def add_student(self):
+        self.validate()
+
+    def empty_lst(self):
+        self.lst.delete(*self.lst.get_children())
+
+    def search_student(self):
+        self.empty_lst()
+        self.validate()
+        student_inp = self.get_student_by_entries()
+        students = [vars(student) for student in student_service.get_student_by_params(student_inp)]
+        for i in range(len(students)):
+            self.lst.insert('', tk.END, values=((i + 1,) + tuple(students[i].values())))
+
+    def get_student_by_entries(self):
+        student = {
+            "sid": self.ent_sid.get() or None,
+            "fname": self.ent_fname.get() or None,
+            "lname": self.ent_lname.get() or None,
+            "cid": self.ent_cid.get() or None,
+            "address": self.ent_addr.get() or None,
+            "phone": self.ent_phone.get() or None,
+            "email": self.ent_email.get() or None,
+            "gender": self.gender.get() or None,
+            "dob": None,
+            "generation": None,
+            "status": self.sel_status.get() or None,
+            "departmental_class_id": None
+        }
+        return student
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-root = tk.Tk()
-root.resizable(True, True)
-management = StudentManagement(root)
-management.grid(column=0, row=0)
-root.mainloop()
+if __name__ == '__main__':
+    root = tk.Tk()
+    root.resizable(True, True)
+    management = StudentManagement(root)
+    management.grid(column=0, row=0)
+    root.mainloop()

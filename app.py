@@ -8,7 +8,7 @@ class App:
    def __init__(self, root: tk.Tk):
       self.root = root
       self.root.title('Student Management')
-      self.root.geometry("1280x800")
+      self.root.geometry("2000x1000")
       self.root.resizable(True, True)
 
       self.root.grid_rowconfigure(0, weight=1)

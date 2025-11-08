@@ -1,6 +1,8 @@
 from types import SimpleNamespace as sn
 from config.db import cursor, conn
 from typing import List, Optional
+import util.util as util
+from service import departmental_class
 
 
 def get_all_students() -> List[sn]:
@@ -14,6 +16,14 @@ def get_student_by_sid(sid: str) -> Optional[sn]:
     cursor.execute(query, (sid,))
     row = cursor.fetchone()
     return sn(**row)
+
+def get_student_by_params(student:dict) -> List[sn]:
+    where, binds = bind_student(student)
+    query = "SELECT sid, fname, lname, dob, address, cid, phone, email, gender, generation, status, img, departmental_class_id FROM students s "
+    query += where
+    cursor.execute(query, binds)
+    rows = cursor.fetchall()
+    return [sn(**row) for row in rows]
 
 def add_student(student: sn) -> bool:
     query = """
@@ -33,7 +43,7 @@ def add_student(student: sn) -> bool:
     return True
 
 def update_student(student: sn) -> bool:
-    query = """
+    query = """ 
     UPDATE students SET
         sid, fname, lname, dob, address, cid, phone, email,
         gender, generation, status, img, departmental_class_id
@@ -65,3 +75,58 @@ def get_students_by_departmental_class(class_id: str) -> List[sn]:
     cursor.execute(query, (class_id,))
     rows = cursor.fetchall()
     return [sn(**row) for row in rows]
+
+def bind_student(student:dict):
+    where, binds, params = ' WHERE ', [], 0
+    if student["sid"]:
+        if params != 0: where += ' AND'
+        where += f" s.sid LIKE '%{student["sid"]}%' "
+        params += 1
+    if student["fname"]:
+        if params != 0: where += ' AND'
+        where += f" s.fname LIKE '%{student["fname"]}%' "
+        params += 1
+    if student["lname"]:
+        if params != 0: where += ' AND'
+        where += f" s.lname LIKE '%{student["lname"]}%' "
+        params += 1
+    if student["dob"] is not None:
+        if params != 0: where += ' AND'
+        where += ' s.dob = %s '
+        binds.append(student["dob"])
+        params += 1
+    if student["address"]:
+        if params != 0: where += ' AND'
+        where += f" s.address LIKE '%{student["address"]}%' "
+        params += 1
+    if student["cid"]:
+        if params != 0: where += ' AND'
+        where += f" s.cid LIKE '%{student["cid"]}%' "
+        params += 1
+    if student["phone"]:
+        if params != 0: where += ' AND'
+        where += f" s.phone LIKE '%{student["phone"]}%' "
+        params += 1
+    if student["email"]:
+        if params != 0: where += ' AND'
+        where += f" s.email LIKE '%{student["email"]}%' "
+        params += 1
+    if student["gender"]:
+        if params != 0: where += ' AND'
+        where += ' s.gender = %s '
+        if student["gender"] == True: binds.append(1)
+        else: binds.append(0)
+        params += 1
+    if student["status"]:
+        if params != 0: where += ' AND'
+        where += f" s.status = %{student["status"]}%' "
+        params += 1
+    if student["departmental_class_id"]:
+        if params != 0: where += ' AND'
+        where += ' s.departmental_class_id = %s '
+        binds.append(student["departmental_class_id"])
+        params += 1
+    return where, binds
+
+
+
