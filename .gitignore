@@ -1,6 +1,7 @@
 .venv
 README.md
-generated_xlsx
+public/generated_xlsx/*.xslx
+public/profile_pictures/*
 static/images
 __pycache__
 .idea

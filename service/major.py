@@ -26,6 +26,12 @@ def get_majors_by_department(department_id: int) -> List[sn]:
     rows = cursor.fetchall()
     return [sn(**row) for row in rows]
 
+def get_major_by_dep_cls_id(dep_cls_id: int) -> Optional[sn]:
+    query = "SELECT m.id, m.name FROM majors m JOIN departmental_classes dc ON dc.major_id = m.id WHERE dc.id = %s"
+    cursor.execute(query, (dep_cls_id,))
+    row = cursor.fetchone()
+    return sn(**row)
+
 def add_major(name: str, department_id: int) -> Optional[int]:
     query = "INSERT INTO majors (name, department_id) VALUES (%s, %s)"
     cursor.execute(query, (name, department_id))

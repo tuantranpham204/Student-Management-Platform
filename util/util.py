@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
 from types import SimpleNamespace as sn
-
 load_dotenv()
 
 default_vals = sn({
@@ -20,11 +19,17 @@ headings = sn({
 
 
 status = {
-  "0": "inactive",
-  "1": "active",
-  "2": "graduated",
-  "-1": "repeated"
+  "0": "Inactive",
+  "1": "Active",
+  "2": "Graduated",
+  "-1": "Repeated"
 }
 
-def gen_K(gen_int:int) -> str:
+gender_get = {
+  1 : True,
+  0: False,
+  -1: None
+}
+
+def gen_K(gen_int ) -> str:
   return 'K' + str(gen_int)

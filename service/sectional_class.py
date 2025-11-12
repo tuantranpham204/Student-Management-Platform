@@ -14,6 +14,21 @@ def get_class_by_id(id: int) -> Optional[sn]:
     row = cursor.fetchone()
     return sn(**row)
 
+def get_classes_by_major_id(major_id: int) -> List[sn]:
+    query = "SELECT id, name, semester_id, subject_id, major_id FROM sectional_classes WHERE major_id = %s"
+    cursor.execute(query, (major_id,))
+    rows = cursor.fetchall()
+    return [sn(**row) for row in rows]
+
+def get_classes_by_subject_id(subject_id: int) -> Optional[sn]:
+    query = "SELECT id, name, semester_id, subject_id, major_id FROM sectional_classes WHERE subject_id = %s"
+    cursor.execute(query, (subject_id,))
+    rows = cursor.fetchall()
+    return [sn(**row) for row in rows]
+
+
+
+
 def get_classes_by_semester(semester_id: int) -> List[sn]:
     query = "SELECT id, name, semester_id, subject_id, major_id FROM sectional_classes WHERE semester_id = %s"
     cursor.execute(query, (semester_id,))

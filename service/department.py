@@ -14,6 +14,12 @@ def get_department_by_id(id: int) -> Optional[sn]:
     row = cursor.fetchone()
     return sn(**row)
 
+def get_department_by_major_id(major_id: int) -> Optional[sn]:
+    query = "SELECT d.id, d.name FROM departments d JOIN majors m ON m.department_id = d.id WHERE m.id = %s"
+    cursor.execute(query, (major_id,))
+    row = cursor.fetchone()
+    return sn(**row)
+
 def add_department(name: str) -> Optional[int]:
     query = "INSERT INTO departments (name) VALUES (%s)"
     cursor.execute(query, (name,))

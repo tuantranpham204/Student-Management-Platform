@@ -18,7 +18,7 @@ def get_student_by_sid(sid: str) -> Optional[sn]:
     return sn(**row)
 
 def get_student_by_params(student:dict) -> List[sn]:
-    where, binds = bind_student(student)
+    where, binds = select_binds(student)
     query = "SELECT sid, fname, lname, dob, address, cid, phone, email, gender, generation, status, img, departmental_class_id FROM students s "
     query += where
     cursor.execute(query, binds)
@@ -30,31 +30,21 @@ def add_student(student: sn) -> bool:
     INSERT INTO students (
         sid, fname, lname, dob, address, cid, phone, email,
         gender, generation, status, img, departmental_class_id
-    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
-    values = (
+    binds = (
         student.sid, student.fname, student.lname, student.dob, student.address,
         student.cid, student.phone, student.email, student.gender,
-        student.generation, student.img, student.departmental_class_id, student.major_id,
-        student.graduated, student.active
+        student.generation, student.status, student.img ,student.departmental_class_id
     )
-    cursor.execute(query, values)
+    cursor.execute(query, binds)
     conn.commit()
     return True
 
-def update_student(student: sn) -> bool:
-    query = """ 
-    UPDATE students SET
-        sid, fname, lname, dob, address, cid, phone, email,
-        gender, generation, status, img, departmental_class_id
-    WHERE sid = %s
-    """
-    values = (
-        student.fname, student.lname, student.dob, student.address,
-        student.cid, student.phone, student.email, student.gender,
-        student.generation, student.status, student.status,student.img, student.departmental_class_id, student.sid
-    )
-    cursor.execute(query, values)
+def update_student(student:dict) -> bool:
+    set, binds = update_binds(student)
+    query = f"""UPDATE students s f{set} WHERE s.sid = {student["sid"]}"""
+    cursor.execute(query, binds)
     conn.commit()
     return True
 
@@ -65,7 +55,9 @@ def delete_student(sid: str) -> bool:
     return True
 
 def get_students_by_major(major_id: int) -> List[sn]:
-    query = "SELECT sid, fname, lname, dob, address, cid, phone, email, gender, generation, status, img, departmental_class_id FROM students WHERE major_id = %s"
+    query = """SELECT sid, fname, lname, dob, address, cid, phone, email, gender, generation, status, img, departmental_class_id FROM students s 
+               JOIN departmental_classes dc ON dc.departmental_class_id = s.departmental_class_id
+               WHERE dc.major_id = %s"""
     cursor.execute(query, (major_id,))
     rows = cursor.fetchall()
     return [sn(**row) for row in rows]
@@ -76,7 +68,7 @@ def get_students_by_departmental_class(class_id: str) -> List[sn]:
     rows = cursor.fetchall()
     return [sn(**row) for row in rows]
 
-def bind_student(student:dict):
+def select_binds(student:dict):
     where, binds, params = ' WHERE ', [], 0
     if student["sid"]:
         if params != 0: where += ' AND'
@@ -119,14 +111,53 @@ def bind_student(student:dict):
         params += 1
     if student["status"]:
         if params != 0: where += ' AND'
-        where += f" s.status = %{student["status"]}%' "
+        where += f" s.status = %s "
+        binds.append(student["status"])
         params += 1
     if student["departmental_class_id"]:
         if params != 0: where += ' AND'
         where += ' s.departmental_class_id = %s '
         binds.append(student["departmental_class_id"])
         params += 1
+    if params == 0: where = ''
     return where, binds
+
+def update_binds(student:dict):
+    set, binds = ' SET', []
+    if student["fname"]:
+        set += f" s.fname = ? ,"
+        binds.append(student["fname"])
+    if student["lname"]:
+        set += f" s.lname = ? ,"
+        binds.append(student["lname"])
+    if student["dob"] is not None:
+        set += f" s.dob = %s ,"
+        binds.append(student["dob"])
+    if student["address"]:
+        set += f" s.address = ? ,"
+        binds.append(student["address"])
+    if student["cid"]:
+        set += f" s.cid = ? ,"
+        binds.append(student["cid"])
+    if student["phone"]:
+        set += f" s.phone = ? ,"
+        binds.append(student["phone"])
+    if student["email"]:
+        set += f" s.email = ? ,"
+        binds.append(student["email"])
+    if student["gender"]:
+        set += f" s.gender = ? ,"
+        if student["gender"] == True: binds.append(1)
+        else: binds.append(0)
+    if student["status"]:
+        set += f" s.status = ? ,"
+        binds.append(student["status"])
+    if student["departmental_class_id"]:
+        set += f" s.departmental_class_id = ? ,"
+        binds.append(student["departmental_class_id"])
+    set = set[len(set) - 1:]
+    return set, binds
+
 
 
 
