@@ -37,6 +37,7 @@ class StudentManagement(tk.Frame):
         self.gen_name_to_id = {}  # For K17 -> 17
 
         self.widgets()
+        self.init_pro5_pic()
         self.populate_comboboxes()
         self.get_all_students()
 
@@ -622,16 +623,17 @@ class StudentManagement(tk.Frame):
 
     @handle_exceptions()
     def update_student(self):
-        if not self.validate(check_sid=False):  # Don't validate SID (it's disabled)
+        if not self.validate(check_sid=False):
             return
         if not self.ent_sid.get():
             messagebox.showerror("Error", "Please select a student from the list to update.")
             return
-        student = self.get_students_from_entries_as_dict()
+        student = self.get_students_from_entries
+        student.img = self.handle_image_save(student)
         try:
-            student_service.update_student(student)
+            student_service.update_student(vars(student))
             messagebox.showinfo("Success", f"Student {student.fname} {student.lname} updated successfully.")
-            self.get_all_students()  # Refresh list
+            self.get_all_students()
         except Exception as e:
             messagebox.showerror("Database Error", f"Failed to update student.\nError: {e}")
 

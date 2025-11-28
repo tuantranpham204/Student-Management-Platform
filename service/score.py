@@ -51,3 +51,54 @@ def delete_score(sectional_class_id: int, student_id: str) -> bool:
     conn.commit()
     return True
 
+def get_scores_by_params(score: dict) -> List[sn]:
+    where, binds = select_binds(score)
+    query = f"SELECT sectional_class_id, student_id, regular1, regular2, regular3, midterm, final FROM scores s {where}"
+    cursor.execute(query, binds)
+    rows = cursor.fetchall()
+    return [sn(**row) for row in rows]
+
+def update_score(score: dict) -> bool:
+    set_clause, binds = update_binds(score)
+    # Composite PK
+    query = f"UPDATE scores s {set_clause} WHERE s.sectional_class_id = {score['sectional_class_id']} AND s.student_id = '{score['student_id']}'"
+    cursor.execute(query, binds)
+    conn.commit()
+    return True
+
+def select_binds(score: dict):
+    where, binds, params = ' WHERE ', [], 0
+    if score.get("sectional_class_id"):
+        if params != 0: where += ' AND'
+        where += ' s.sectional_class_id = %s '
+        binds.append(score["sectional_class_id"])
+        params += 1
+    if score.get("student_id"):
+        if params != 0: where += ' AND'
+        where += ' s.student_id = %s '
+        binds.append(score["student_id"])
+        params += 1
+    if params == 0: where = ''
+    return where, binds
+
+def update_binds(score: dict):
+    set_clause, binds = ' SET', []
+    # For numeric scores, check is not None
+    if score.get("regular1") is not None:
+        set_clause += " s.regular1 = %s ,"
+        binds.append(score["regular1"])
+    if score.get("regular2") is not None:
+        set_clause += " s.regular2 = %s ,"
+        binds.append(score["regular2"])
+    if score.get("regular3") is not None:
+        set_clause += " s.regular3 = %s ,"
+        binds.append(score["regular3"])
+    if score.get("midterm") is not None:
+        set_clause += " s.midterm = %s ,"
+        binds.append(score["midterm"])
+    if score.get("final") is not None:
+        set_clause += " s.final = %s ,"
+        binds.append(score["final"])
+    set_clause = set_clause[:-1]
+    return set_clause, binds
+

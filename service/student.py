@@ -1,8 +1,7 @@
 from types import SimpleNamespace as sn
 from config.db import cursor, conn
 from typing import List, Optional
-import util.util as util
-from service import departmental_class
+import re
 
 
 def get_all_students() -> List[sn]:
@@ -19,8 +18,7 @@ def get_student_by_sid(sid: str) -> Optional[sn]:
 
 def get_student_by_params(student:dict) -> List[sn]:
     where, binds = select_binds(student)
-    query = "SELECT sid, fname, lname, dob, address, cid, phone, email, gender, generation, status, img, departmental_class_id FROM students s "
-    query += where
+    query = f"SELECT sid, fname, lname, dob, address, cid, phone, email, gender, generation, status, img, departmental_class_id FROM students s {where}"
     cursor.execute(query, binds)
     rows = cursor.fetchall()
     return [sn(**row) for row in rows]
@@ -43,7 +41,7 @@ def add_student(student: sn) -> bool:
 
 def update_student(student:dict) -> bool:
     set, binds = update_binds(student)
-    query = f"""UPDATE students s f{set} WHERE s.sid = {student["sid"]}"""
+    query = f"""UPDATE students s {set} WHERE s.sid = {student["sid"]}"""
     cursor.execute(query, binds)
     conn.commit()
     return True
@@ -125,37 +123,37 @@ def select_binds(student:dict):
 def update_binds(student:dict):
     set, binds = ' SET', []
     if student["fname"]:
-        set += f" s.fname = ? ,"
+        set += f" s.fname = %s ,"
         binds.append(student["fname"])
     if student["lname"]:
-        set += f" s.lname = ? ,"
+        set += f" s.lname = %s,"
         binds.append(student["lname"])
     if student["dob"] is not None:
         set += f" s.dob = %s ,"
         binds.append(student["dob"])
     if student["address"]:
-        set += f" s.address = ? ,"
+        set += f" s.address = %s ,"
         binds.append(student["address"])
     if student["cid"]:
-        set += f" s.cid = ? ,"
+        set += f" s.cid = %s ,"
         binds.append(student["cid"])
     if student["phone"]:
-        set += f" s.phone = ? ,"
+        set += f" s.phone = %s ,"
         binds.append(student["phone"])
     if student["email"]:
-        set += f" s.email = ? ,"
+        set += f" s.email = %s ,"
         binds.append(student["email"])
     if student["gender"]:
-        set += f" s.gender = ? ,"
+        set += f" s.gender = %s ,"
         if student["gender"] == True: binds.append(1)
         else: binds.append(0)
     if student["status"]:
-        set += f" s.status = ? ,"
+        set += f" s.status = %s ,"
         binds.append(student["status"])
     if student["departmental_class_id"]:
         set += f" s.departmental_class_id = ? ,"
         binds.append(student["departmental_class_id"])
-    set = set[len(set) - 1:]
+    set = re.sub(r'.$', '', set)
     return set, binds
 
 

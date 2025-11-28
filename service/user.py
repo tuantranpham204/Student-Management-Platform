@@ -29,11 +29,58 @@ def add_user(username: str, email: str, plain_password: str, name: Optional[str]
     conn.commit()
     return cursor.lastrowid
 
-def update_user(id: int, username: str, email: str, name: Optional[str] = None) -> bool:
-    query = "UPDATE users SET username = %s, email = %s, name = %s WHERE id = %s"
-    cursor.execute(query, (username, email, name, id))
+def get_users_by_params(user: dict) -> List[sn]:
+    where, binds = select_binds(user)
+    query = f"SELECT id, username, password, name, email FROM users u {where}"
+    cursor.execute(query, binds)
+    rows = cursor.fetchall()
+    return [sn(**row) for row in rows]
+
+def update_user(user: dict) -> bool:
+    set_clause, binds = update_binds(user)
+    query = f"UPDATE users u {set_clause} WHERE u.id = {user['id']}"
+    cursor.execute(query, binds)
     conn.commit()
     return True
+
+def select_binds(user: dict):
+    where, binds, params = ' WHERE ', [], 0
+    if user.get("id"):
+        if params != 0: where += ' AND'
+        where += ' u.id = %s '
+        binds.append(user["id"])
+        params += 1
+    if user.get("username"):
+        if params != 0: where += ' AND'
+        where += f" u.username LIKE '%{user['username']}%' "
+        params += 1
+    if user.get("name"):
+        if params != 0: where += ' AND'
+        where += f" u.name LIKE '%{user['name']}%' "
+        params += 1
+    if user.get("email"):
+        if params != 0: where += ' AND'
+        where += f" u.email LIKE '%{user['email']}%' "
+        params += 1
+    if params == 0: where = ''
+    return where, binds
+
+def update_binds(user: dict):
+    set_clause, binds = ' SET', []
+    if user.get("username"):
+        set_clause += " u.username = %s ,"
+        binds.append(user["username"])
+    if user.get("password"):
+        set_clause += " u.password = %s ,"
+        binds.append(user["password"])
+    if user.get("name"):
+        set_clause += " u.name = %s ,"
+        binds.append(user["name"])
+    if user.get("email"):
+        set_clause += " u.email = %s ,"
+        binds.append(user["email"])
+    set_clause = set_clause[:-1]
+    return set_clause, binds
 
 
 
