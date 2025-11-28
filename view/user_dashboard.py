@@ -119,7 +119,7 @@ class UserDashboard(tk.Frame):
         # Tiêu đề
         title_label = tk.Label(
             header_frame,
-            text="📊 THỐNG KÊ TỔNG QUAN TRƯỜNG ĐẠI HỌC",
+            text="📊 THỐNG KÊ TỔNG QUAN HỆ THỐNG",
             font=("Arial", 20, "bold"),
             bg="#2C3E50",
             fg="white"
