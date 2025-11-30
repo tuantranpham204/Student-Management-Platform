@@ -8,3 +8,4 @@ numpy
 dotenv
 passlib[bcrypt]==1.7.4
 bcrypt==4.3.0
+matplotlib

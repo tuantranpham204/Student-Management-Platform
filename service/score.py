@@ -7,7 +7,26 @@ def get_all_scores() -> List[sn]:
     cursor.execute(query)
     rows = cursor.fetchall()
     return [sn(**row) for row in rows]
-
+def get_scores_by_student(student_id):
+    """Lấy điểm của một sinh viên"""
+    from config.db import conn  # ✅ ĐÚNG
+    from types import SimpleNamespace as sn
+    
+    cursor = conn.cursor(dictionary=True)  # ✅ ĐÚNG
+    query = """
+        SELECT sectional_class_id, student_id, regular1, regular2, 
+               regular3, midterm, final
+        FROM scores
+        WHERE student_id = %s
+    """
+    cursor.execute(query, (student_id,))
+    
+    scores = []
+    for row in cursor.fetchall():
+        scores.append(sn(**row))  # ✅ ĐÚNG - dùng **row với dictionary
+    
+    cursor.close()
+    return scores
 def get_score_by_pk(sectional_class_id: int, student_id: str) -> Optional[sn]:
     query = "SELECT sectional_class_id, student_id, regular1, regular2, regular3, midterm, final FROM scores WHERE sectional_class_id = %s AND student_id = %s"
     cursor.execute(query, (sectional_class_id, student_id))
