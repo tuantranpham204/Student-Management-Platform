@@ -10,8 +10,7 @@ def get_all_students() -> List[sn]:
     rows = cursor.fetchall()
     return [sn(**row) for row in rows]
 def get_students_by_class(class_id):
-    """Lấy danh sách sinh viên theo lớp"""
-    from config.db import conn  # ✅ ĐÚNG
+    from config.db import conn
     from types import SimpleNamespace as sn
     
     cursor = conn.cursor(dictionary=True)  # ✅ ĐÚNG - dùng dictionary=True
@@ -23,11 +22,9 @@ def get_students_by_class(class_id):
         ORDER BY sid
     """
     cursor.execute(query, (class_id,))
-    
     students = []
     for row in cursor.fetchall():
-        students.append(sn(**row))  # ✅ ĐÚNG - dùng **row với dictionary
-    
+        students.append(sn(**row))
     cursor.close()
     return students
 def get_student_by_sid(sid: str) -> Optional[sn]:

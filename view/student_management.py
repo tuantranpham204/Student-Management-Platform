@@ -19,8 +19,9 @@ import shutil
 
 
 class StudentManagement(tk.Frame):
-    def __init__(self, parent):
+    def __init__(self, parent, back_callback=None):
         self.parent = parent
+        self.back_callback = back_callback  # Store the callback
         super().__init__(parent)
 
         # Store service data
@@ -43,12 +44,7 @@ class StudentManagement(tk.Frame):
 
     def widgets(self):
         self.fr_info = tk.Frame(self)
-        # self.fr_info.grid_propagate(False)
-
         self.fr_lst = tk.Frame(self)
-
-        # self.fr_info.config(width=100, height=100)
-        # self.fr_lst.config(width=100, height=100)
 
         self.fr_info.grid(row=0, column=0, padx=10, pady=10)
         self.fr_lst.grid(row=1, column=0, padx=10, pady=10)
@@ -66,7 +62,7 @@ class StudentManagement(tk.Frame):
 
         self.btn_pro5_pic = tk.Button(self.fr_pro5, text='Select student profile picture', command=self.select_image)
         self.btn_pro5_pic.grid(row=6, column=0, padx=5, pady=5)
-        self.img_path = tk.StringVar()  # To store image path
+        self.img_path = tk.StringVar()
 
         # === Student Input Fields ===
         self.fr_inp = tk.Frame(self.fr_info)
@@ -100,7 +96,6 @@ class StudentManagement(tk.Frame):
         self.search_dob_var = tk.BooleanVar(value=False)
         self.chk_dob = tk.Checkbutton(self.fr_inp, text="Searchable", variable=self.search_dob_var)
         self.chk_dob.grid(row=4, column=col2, padx=10, pady=10, sticky='w')
-
 
         self.lbl_gender = tk.Label(self.fr_inp, text='Gender: ', anchor='w')
         self.lbl_gender.grid(row=5, column=col1, padx=10, pady=10, sticky='w')
@@ -173,7 +168,6 @@ class StudentManagement(tk.Frame):
         self.sel_sec_cls = tk.ttk.Combobox(self.fr_inp, textvariable=self.sel_sec_cls_var, state='readonly', width=27)
         self.sel_sec_cls.grid(row=5, column=col4, padx=10, pady=10)
 
-
         self.fr_btn = tk.Frame(self.fr_inp)
         self.fr_btn.grid(row=6, column=col3, padx=10, pady=10, columnspan=2, rowspan=3, sticky='nsew')
 
@@ -196,11 +190,15 @@ class StudentManagement(tk.Frame):
         self.btn_all.grid(row=1, column=2, padx=5, pady=5, sticky='nsew')
 
         self.btn_xls = tk.Button(self.fr_btn, text='Extract to XLSX', padx=10, pady=5, command=self.export_to_xlsx)
-        self.btn_xls.grid(row=2, column=0, padx=5, pady=5, sticky='nsew', columnspan=3)
+        self.btn_xls.grid(row=2, column=0, padx=5, pady=5, sticky='nsew', columnspan=2)
+
+        self.btn_exit = tk.Button(self.fr_btn, text='Exit', padx=10, pady=5, command=self.go_back, bg='#FF6B6B',
+                                  fg='white')
+        self.btn_exit.grid(row=2, column=2, padx=5, pady=5, sticky='nsew')
 
         # === List Frame (Treeview) ===
         self.lst = ttk.Treeview(self.fr_lst, columns=("ord",) + util.attrs.student, show='headings')
-        self.lst.grid(row=0, column=0, sticky='nsew')  # Changed row to 0
+        self.lst.grid(row=0, column=0, sticky='nsew')
 
         self.lst.heading("ord", text="Order")
         for head, attr in zip(util.headings.student, util.attrs.student):
@@ -215,7 +213,6 @@ class StudentManagement(tk.Frame):
         self.lst.column('generation', width=70, stretch=False)
         self.lst.column('status', width=70, stretch=False)
         self.lst.column('departmental_class_id', width=120)
-        # Hide some columns by default
         self.lst.column('img', width=0, stretch=False)
         self.lst.column('address', width=0, stretch=False)
         self.lst.column('cid', width=0, stretch=False)
@@ -225,30 +222,31 @@ class StudentManagement(tk.Frame):
         # --- Scrollbars ---
         self.scrollbar_y = ttk.Scrollbar(self.fr_lst, orient="vertical", command=self.lst.yview)
         self.scrollbar_x = ttk.Scrollbar(self.fr_lst, orient="horizontal", command=self.lst.xview)
-        self.scrollbar_y.grid(row=0, column=1, sticky='ns')  # Changed row to 0
-        self.scrollbar_x.grid(row=1, column=0, sticky='ew')  # Changed row to 1
+        self.scrollbar_y.grid(row=0, column=1, sticky='ns')
+        self.scrollbar_x.grid(row=1, column=0, sticky='ew')
         self.lst.configure(yscrollcommand=self.scrollbar_y.set, xscrollcommand=self.scrollbar_x.set)
 
-        # --- Grid configuration for list frame ---
-        self.fr_lst.grid_rowconfigure(0, weight=1)  # Changed row to 0
+        self.fr_lst.grid_rowconfigure(0, weight=1)
         self.fr_lst.grid_columnconfigure(0, weight=1)
 
-        # --- Bindings ---
         self.lst.bind("<<TreeviewSelect>>", self.load_student_data)
 
-    # ========== HELPER & EVENT FUNCTIONS ==========
+    def go_back(self):
+        if self.back_callback:
+            self.back_callback()
+        else:
+            # Fallback if run directly or no callback provided
+            self.parent.quit()
+
+    # ... (Keep the rest of the methods exactly as they were) ...
+    # Copying other methods to ensure file is complete
 
     @handle_exceptions(default_return_value=[])
     def populate_comboboxes(self):
-        # --- Status ---
         self.sel_status['values'] = list(util.status.values())
-
-        # --- Generation ---
-        gens = [util.gen_K(i) for i in range(10, 25)]  # K10 to K24
+        gens = [util.gen_K(i) for i in range(10, 25)]
         self.gen_name_to_id = {name: int(name[1:]) for name in gens}
         self.ent_gen['values'] = gens
-
-        # --- Departments ---
         self.departments = department_service.get_all_departments()
         dep_names = [dep.name for dep in self.departments]
         self.dep_name_to_id = {dep.name: dep.id for dep in self.departments}
@@ -278,17 +276,15 @@ class StudentManagement(tk.Frame):
         self.sel_dep_cls.config(state='readonly')
         self.dep_classes = dep_cls_service.get_classes_by_major(maj_id)
         dep_cls_names = [cls.name for cls in self.dep_classes]
-        self.dep_cls_name_to_id = {cls.name: cls.id for cls in self.dep_classes}
+        self.cls_name_to_id = {cls.name: cls.id for cls in self.dep_classes}
         self.sel_dep_cls['values'] = dep_cls_names
         self.sel_dep_cls_var.set('')
 
         self.sel_sec_cls.config(state='readonly')
         self.sec_classes = sec_cls_service.get_classes_by_major_id(maj_id)
         sec_cls_names = [cls.name for cls in self.sec_classes]
-        self.sec_cls_name_to_id = {cls.name: cls.id for cls in self.dep_classes}
         self.sel_sec_cls['values'] = sec_cls_names
         self.sel_sec_cls_var.set('')
-
 
     def categorize(self, students_sn: list):
         for student in students_sn:
@@ -331,7 +327,7 @@ class StudentManagement(tk.Frame):
         self.ent_phone.delete(0, tk.END)
         self.ent_email.delete(0, tk.END)
         self.ent_dob.set_date(datetime.now())
-        self.gender.set(True)  # Default to Male
+        self.gender.set(True)
         self.sel_gen_var.set('')
         self.sel_status_var.set('')
         self.sel_dep_var.set('')
@@ -340,35 +336,17 @@ class StudentManagement(tk.Frame):
         self.sel_dep_cls_var.set('')
         self.sel_dep_cls['values'] = []
         self.img_path.set('')
+        self.img_path_src = None
         self.pro5_pic.delete("all")
         self.pro5_pic.create_text(70, 110, text="No Image", fill="grey")
-        self.lst.selection_remove(self.lst.selection())  # Deselect item in list
-        # --- ADD/UPDATE THIS ---
-        self.img_path.set('')
-        self.img_path_src = None  # <-- ADD THIS
-        self.pro5_pic.delete("all")  # Clear the image
-        self.pro5_pic.create_text(70, 110, text="No Image", fill="grey")  # Add default text
-        self.lst.selection_remove(self.lst.selection())  # Deselect item in list
-
-    def open_pro5_pic(self):
-        try:
-            os.makedirs("../public/profile_pictures", exist_ok=True)
-            print("Directories created or already exist.")
-        except OSError as e:
-            print(f"Error creating directories: {e}")
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.pro5_pic_path =  os.path.join(current_dir, "../public/profile_pictures")
-        pro5_pic = Image.open(self.pro5_pic_path).resize((140,220))
-        self._pro5_pic = ImageTk.PhotoImage(pro5_pic)
-        self.pro5_pic.create_image(0,0,anchor=tk.NW, image=self._pro5_pic)
+        self.lst.selection_remove(self.lst.selection())
 
     def select_image(self):
         path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.png *.jpeg *.gif")])
         if path:
-            self.img_path_src = path  # <-- Store the SOURCE path
-            self.img_path.set(path)   # This variable holds the "current" path
+            self.img_path_src = path
+            self.img_path.set(path)
             try:
-                # Preview the selected image
                 self.pro5_pic.delete("all")
                 pro5_pic = Image.open(path).resize((140, 220))
                 self._pro5_pic_new = ImageTk.PhotoImage(pro5_pic)
@@ -379,38 +357,18 @@ class StudentManagement(tk.Frame):
                 self.pro5_pic.create_text(70, 110, text="Load Error", fill="red")
 
     def handle_image_save(self, sid):
-        """
-        Checks if a new image was selected (self.img_path_src).
-        If so, copies it using the 'sid' as the filename and returns the new absolute path.
-        If not, returns the existing image path (from self.img_path).
-        """
-        # Case 1: A new image was selected
         if self.img_path_src and os.path.exists(self.img_path_src):
             try:
-                # Get file extension (e.g., .jpg)
                 _, ext = os.path.splitext(self.img_path_src)
-                if not ext: ext = ".jpg"  # Default if no extension
-
-                # Create a new, unique filename based on the student's ID
+                if not ext: ext = ".jpg"
                 new_filename = f"{sid}{ext.lower()}"
-
-                # Create the full destination path
                 dest_path = os.path.join(self.PROFILE_PIC_DIR, new_filename)
-
-                # Copy the file from the source path to the destination path
                 shutil.copy(self.img_path_src, dest_path)
-
-                # Return the *absolute* path of the new file
                 return os.path.abspath(dest_path)
-
             except Exception as e:
                 messagebox.showerror("Image Save Error", f"Could not save image: {e}")
-                # On failure, just return the path that was already there
                 return self.img_path.get() or None
-
-        # Case 2: No new image was selected, just return the path that was loaded
         return self.img_path.get() or None
-
 
     def get_student_from_entries(self) -> sn:
         sid = self.ent_sid.get().strip() or None
@@ -422,13 +380,10 @@ class StudentManagement(tk.Frame):
         phone = self.ent_phone.get().strip() or None
         email = self.ent_email.get().strip() or None
         gender = self.gender.get()
-
         gen_str = self.sel_gen_var.get()
         generation = self.gen_name_to_id.get(gen_str)
-
         status_str = self.sel_status_var.get()
         status = self.status_name_to_id.get(status_str)
-
         cls_str = self.sel_dep_cls_var.get()
         departmental_class_id = self.cls_name_to_id.get(cls_str)
 
@@ -438,47 +393,32 @@ class StudentManagement(tk.Frame):
             generation=generation, status=status, img=None,
             departmental_class_id=departmental_class_id
         )
-
         return student
 
     def init_pro5_pic(self):
-        # --- ADD THIS ---
-        # Define the target directory for profile pictures
         self.PROFILE_PIC_DIR = os.path.join(
-            os.path.dirname(__file__),  # This is the /view directory
-            "..",  # Go up to the root project folder
-            "public",  # Go into /public
-            "profile_pictures"  # Go into /public/profile_pictures
+            os.path.dirname(__file__), "..", "public", "profile_pictures"
         )
-
-        # Ensure this directory exists
         try:
             os.makedirs(self.PROFILE_PIC_DIR, exist_ok=True)
         except OSError as e:
             print(f"Error creating profile pic directory: {e}")
             messagebox.showerror("IO Error", "Could not create image directory.")
-
-        # This will store the *source path* of a newly selected image
         self.img_path_src = None
 
     @handle_exceptions()
     def load_student_data(self, event=None):
-        """ Loads data from the selected Treeview item into the form fields """
         selected_item = self.lst.selection()
         if not selected_item:
             return
 
-        self.clear_entries()  # Start with a clean form
+        self.clear_entries()
         item = self.lst.item(selected_item)
         values = item['values']
-
-        # Map values to fields based on util.attrs.student
         data = dict(zip(("ord",) + util.attrs.student, values))
-
-        # Fetch the full student object to get un-categorized data
         student = student_service.get_student_by_sid(data['sid'])
         self.img_path.set(student.img or "")
-        self.img_path_src = None  # <-- ADD THIS (we are loading, not selecting)
+        self.img_path_src = None
         if not student:
             messagebox.showerror("Error", "Could not fetch student details.")
             return
@@ -492,76 +432,42 @@ class StudentManagement(tk.Frame):
         self.ent_phone.insert(0, student.phone or "")
         self.ent_email.insert(0, student.email or "")
         self.ent_dob.set_date(student.dob)
-        self.gender.set(student.gender)  # 1=True, 0=False
+        self.gender.set(student.gender)
 
         self.sel_gen_var.set(util.gen_K(student.generation))
         self.sel_status_var.set(util.status.get(str(student.status), ""))
         self.sel_sec_cls.config(state='disabled')
 
-
-        # This is more complex: need to find dep/maj from class
         if student.departmental_class_id:
             try:
-                # Find the class
                 s_dep_cls = dep_cls_service.get_class_by_id(student.departmental_class_id)
                 self.sel_dep_cls_var.set(s_dep_cls.name)
-
-                # Find the major
                 s_major = major_service.get_major_by_dep_cls_id(s_dep_cls.id)
                 self.sel_maj_var.set(s_major.name)
-
                 s_dep = department_service.get_department_by_major_id(s_major.id)
                 self.sel_dep_var.set(s_dep.name)
-
-
-
             except (StopIteration, AttributeError):
-                # Data might not be fully populated yet, just set the class
                 if student.departmental_class_id in self.cls_name_to_id.values():
                     cls_name = [k for k, v in self.cls_name_to_id.items() if v == student.departmental_class_id][0]
                     self.sel_dep_cls_var.set(cls_name)
-                pass  # Could not auto-find parents
+                pass
 
-            # --- NEW IMAGE LOADING LOGIC ---
-            self.pro5_pic.delete("all")  # Clear the canvas
-
-            # Check if the img path exists in the db and the file exists on the computer
+            self.pro5_pic.delete("all")
             if student.img and os.path.exists(student.img):
-                    try:
-                        # Open, resize, and display the image
-                        pro5_pic = Image.open(student.img).resize((140, 220))
-                        # Store on self to prevent garbage collection
-                        self._pro5_pic_tk = ImageTk.PhotoImage(pro5_pic)
-                        self.pro5_pic.create_image(0, 0, anchor=tk.NW, image=self._pro5_pic_tk)
-                    except Exception as e:
-                        print(f"Error loading image '{student.img}': {e}")
-                        self.pro5_pic.create_text(70, 110, text="Load Error", fill="red")
+                try:
+                    pro5_pic = Image.open(student.img).resize((140, 220))
+                    self._pro5_pic_tk = ImageTk.PhotoImage(pro5_pic)
+                    self.pro5_pic.create_image(0, 0, anchor=tk.NW, image=self._pro5_pic_tk)
+                except Exception as e:
+                    print(f"Error loading image '{student.img}': {e}")
+                    self.pro5_pic.create_text(70, 110, text="Load Error", fill="red")
             else:
-                    # Show default text if no image or path is bad
-                    self.pro5_pic.create_text(70, 110, text="No Image", fill="grey")
-                # --- END OF NEW LOGIC ---
+                self.pro5_pic.create_text(70, 110, text="No Image", fill="grey")
 
         self.img_path.set(student.img or "")
         if student.img:
             self.pro5_pic.delete("all")
             self.pro5_pic.create_text(70, 110, text=student.img.split('/')[-1], fill="black")
-
-    def get_students_from_entries(self) -> sn:
-        student_inp = {
-            "sid": self.ent_sid.get().strip() or None,
-            "fname": self.ent_fname.get().strip() or None,
-            "lname": self.ent_lname.get().strip() or None,
-            "cid": self.ent_cid.get().strip() or None,
-            "address": self.ent_addr.get().strip() or None,
-            "phone": self.ent_phone.get().strip() or None,
-            "email": self.ent_email.get().strip() or None,
-            "gender": util.gender_get[self.gender.get()],
-            "dob": self.ent_dob.get(),
-            "generation": self.gen_name_to_id.get(self.sel_gen_var.get()),
-            "status": self.status_name_to_id.get(self.sel_status_var.get()),
-            "departmental_class_id": self.cls_name_to_id.get(self.sel_dep_cls_var.get())
-        }
-        return sn(**student_inp)
 
     def get_students_from_entries_as_dict(self) -> dict:
         student_inp = {
@@ -590,9 +496,6 @@ class StudentManagement(tk.Frame):
             messagebox.showerror("Error", "Student entries must have at least 1 field entered.")
         return is_at_least_1_field_entered
 
-
-    # ========== CRUD & BUTTON FUNCTIONS ==========
-
     @handle_exceptions()
     def get_all_students(self):
         self.empty_lst()
@@ -607,11 +510,12 @@ class StudentManagement(tk.Frame):
     def add_student(self):
         if not self.validate(check_sid=True):
             return
-        student = self.get_students_from_entries()
-        if  student.gender is None and not all(
-                [student.sid, student.fname, student.lname, student.gender,student.dob, student.generation,
+        student = self.get_student_from_entries()
+        if student.gender is None and not all(
+                [student.sid, student.fname, student.lname, student.gender, student.dob, student.generation,
                  student.status, student.departmental_class_id]):
-            messagebox.showerror("Error", "Please fill all required fields (ID, Name, DOB, Gender, Generation, Status, Class).")
+            messagebox.showerror("Error",
+                                 "Please fill all required fields (ID, Name, DOB, Gender, Generation, Status, Class).")
             return
         student.img = self.handle_image_save(student.sid)
         try:
@@ -628,8 +532,8 @@ class StudentManagement(tk.Frame):
         if not self.ent_sid.get():
             messagebox.showerror("Error", "Please select a student from the list to update.")
             return
-        student = self.get_students_from_entries
-        student.img = self.handle_image_save(student)
+        student = self.get_student_from_entries()
+        student.img = self.handle_image_save(student.sid)
         try:
             student_service.update_student(vars(student))
             messagebox.showinfo("Success", f"Student {student.fname} {student.lname} updated successfully.")
@@ -648,7 +552,7 @@ class StudentManagement(tk.Frame):
             try:
                 student_service.delete_student(sid)
                 messagebox.showinfo("Success", f"Student {sid} deleted successfully.")
-                self.get_all_students()  # Refresh list
+                self.get_all_students()
             except Exception as e:
                 messagebox.showerror("Database Error", f"Failed to delete student.\nError: {e}")
 
@@ -670,7 +574,8 @@ class StudentManagement(tk.Frame):
         if not self.lst.get_children():
             messagebox.showwarning("Export Error", "There is no data to export.")
             return
-        filepath = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")])
+        filepath = filedialog.asksaveasfilename(defaultextension=".xlsx",
+                                                filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")])
         if not filepath:
             return
         try:
@@ -679,7 +584,6 @@ class StudentManagement(tk.Frame):
             for item in self.lst.get_children():
                 data.append(self.lst.item(item)['values'])
             df = pd.DataFrame(data, columns=columns)
-            # Drop columns we hid
             df = df.drop(columns=['ord', 'img', 'address', 'cid', 'phone', 'email'])
             df.to_excel(filepath, index=False)
             messagebox.showinfo("Export Success", f"Data exported successfully to\n{filepath}")

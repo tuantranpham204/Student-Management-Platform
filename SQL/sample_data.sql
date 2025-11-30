@@ -22,43 +22,44 @@ INSERT INTO departments (name) VALUES
 ('Khoa học tự nhiên');           -- ID 5
 -- ============================================================
 -- 2. SUBJECTS (Môn học) - 30 môn với các hệ số khác nhau
+-- CONFIG: JSON {"reg1": 0.x, "reg2": 0.x, "reg3": 0.x, "mid": 0.x, "fin": 0.x}
 -- ============================================================
 INSERT INTO subjects (id, name, coff) VALUES
--- Hệ số 1 (5 môn)
-('PE6021', 'Bóng rổ', '1'),
-('PE6022', 'Bóng đá', '1'),
-('PE6023', 'Cầu lông', '1'),
-('PE6024', 'Bơi lội', '1'),
-('PE6025', 'Võ thuật', '1'),
--- Hệ số 2 (8 môn)
-('BM6091', 'Quản lý dự án', '2'),
-('BM6092', 'Phân tích kinh doanh', '2'),
-('BM6093', 'Marketing căn bản', '2'),
-('BM6094', 'Quản trị nhân sự', '2'),
-('IT6001', 'Nhập môn lập trình', '2'),
-('IT6002', 'Cấu trúc dữ liệu', '2'),
-('IT6003', 'Hệ điều hành', '2'),
-('IT6004', 'Mạng máy tính', '2'),
--- Hệ số 3 (10 môn)
-('BS6001', 'Đại số tuyến tính', '3'),
-('BS6002', 'Giải tích', '3'),
-('BS6003', 'Xác suất thống kê', '3'),
-('LP6010', 'Triết học Mác-Lênin', '3'),
-('LP6011', 'Kinh tế chính trị', '3'),
-('LP6012', 'Chủ nghĩa xã hội khoa học', '3'),
-('PH6001', 'Vật lý đại cương', '3'),
-('CH6001', 'Hóa học đại cương', '3'),
-('BI6001', 'Sinh học đại cương', '3'),
-('EN6001', 'Môi trường và phát triển bền vững', '3'),
--- Hệ số 4 (4 môn)
-('IT6010', 'Trí tuệ nhân tạo', '4'),
-('IT6011', 'Học máy', '4'),
-('IT6012', 'Xử lý ngôn ngữ tự nhiên', '4'),
-('IT6013', 'Thị giác máy tính', '4'),
--- Hệ số 5 (3 môn)
-('FL6085', 'Tiếng Anh CNTT cơ bản 1', '5'),
-('FL6086', 'Tiếng Anh CNTT cơ bản 2', '5'),
-('FL6087', 'Tiếng Anh chuyên ngành', '5');
+-- Hệ số 1 (Thể chất - 50% Process, 50% Final)
+('PE6021', 'Bóng rổ', '{"reg1":0.2,"reg2":0.2,"reg3":0.1,"mid":0.0,"fin":0.5}'),
+('PE6022', 'Bóng đá', '{"reg1":0.2,"reg2":0.2,"reg3":0.1,"mid":0.0,"fin":0.5}'),
+('PE6023', 'Cầu lông', '{"reg1":0.2,"reg2":0.2,"reg3":0.1,"mid":0.0,"fin":0.5}'),
+('PE6024', 'Bơi lội', '{"reg1":0.2,"reg2":0.2,"reg3":0.1,"mid":0.0,"fin":0.5}'),
+('PE6025', 'Võ thuật', '{"reg1":0.2,"reg2":0.2,"reg3":0.1,"mid":0.0,"fin":0.5}'),
+-- Hệ số 2 (Cơ sở ngành - 10%x3 Process, 20% Mid, 50% Final)
+('BM6091', 'Quản lý dự án', '{"reg1":0.1,"reg2":0.1,"reg3":0.1,"mid":0.2,"fin":0.5}'),
+('BM6092', 'Phân tích kinh doanh', '{"reg1":0.1,"reg2":0.1,"reg3":0.1,"mid":0.2,"fin":0.5}'),
+('BM6093', 'Marketing căn bản', '{"reg1":0.1,"reg2":0.1,"reg3":0.1,"mid":0.2,"fin":0.5}'),
+('BM6094', 'Quản trị nhân sự', '{"reg1":0.1,"reg2":0.1,"reg3":0.1,"mid":0.2,"fin":0.5}'),
+('IT6001', 'Nhập môn lập trình', '{"reg1":0.1,"reg2":0.1,"reg3":0.1,"mid":0.2,"fin":0.5}'),
+('IT6002', 'Cấu trúc dữ liệu', '{"reg1":0.1,"reg2":0.1,"reg3":0.1,"mid":0.2,"fin":0.5}'),
+('IT6003', 'Hệ điều hành', '{"reg1":0.1,"reg2":0.1,"reg3":0.1,"mid":0.2,"fin":0.5}'),
+('IT6004', 'Mạng máy tính', '{"reg1":0.1,"reg2":0.1,"reg3":0.1,"mid":0.2,"fin":0.5}'),
+-- Hệ số 3 (Đại cương - 20% Process, 30% Mid, 50% Final)
+('BS6001', 'Đại số tuyến tính', '{"reg1":0.1,"reg2":0.1,"reg3":0.0,"mid":0.3,"fin":0.5}'),
+('BS6002', 'Giải tích', '{"reg1":0.1,"reg2":0.1,"reg3":0.0,"mid":0.3,"fin":0.5}'),
+('BS6003', 'Xác suất thống kê', '{"reg1":0.1,"reg2":0.1,"reg3":0.0,"mid":0.3,"fin":0.5}'),
+('LP6010', 'Triết học Mác-Lênin', '{"reg1":0.1,"reg2":0.1,"reg3":0.0,"mid":0.3,"fin":0.5}'),
+('LP6011', 'Kinh tế chính trị', '{"reg1":0.1,"reg2":0.1,"reg3":0.0,"mid":0.3,"fin":0.5}'),
+('LP6012', 'Chủ nghĩa xã hội khoa học', '{"reg1":0.1,"reg2":0.1,"reg3":0.0,"mid":0.3,"fin":0.5}'),
+('PH6001', 'Vật lý đại cương', '{"reg1":0.1,"reg2":0.1,"reg3":0.0,"mid":0.3,"fin":0.5}'),
+('CH6001', 'Hóa học đại cương', '{"reg1":0.1,"reg2":0.1,"reg3":0.0,"mid":0.3,"fin":0.5}'),
+('BI6001', 'Sinh học đại cương', '{"reg1":0.1,"reg2":0.1,"reg3":0.0,"mid":0.3,"fin":0.5}'),
+('EN6001', 'Môi trường và phát triển bền vững', '{"reg1":0.1,"reg2":0.1,"reg3":0.0,"mid":0.3,"fin":0.5}'),
+-- Hệ số 4 (Chuyên ngành - 20%x2 Process, 0% Mid, 60% Final Project)
+('IT6010', 'Trí tuệ nhân tạo', '{"reg1":0.2,"reg2":0.2,"reg3":0.0,"mid":0.0,"fin":0.6}'),
+('IT6011', 'Học máy', '{"reg1":0.2,"reg2":0.2,"reg3":0.0,"mid":0.0,"fin":0.6}'),
+('IT6012', 'Xử lý ngôn ngữ tự nhiên', '{"reg1":0.2,"reg2":0.2,"reg3":0.0,"mid":0.0,"fin":0.6}'),
+('IT6013', 'Thị giác máy tính', '{"reg1":0.2,"reg2":0.2,"reg3":0.0,"mid":0.0,"fin":0.6}'),
+-- Hệ số 5 (Ngoại ngữ - 10%x3 Process, 20% Mid, 50% Final)
+('FL6085', 'Tiếng Anh CNTT cơ bản 1', '{"reg1":0.1,"reg2":0.1,"reg3":0.1,"mid":0.2,"fin":0.5}'),
+('FL6086', 'Tiếng Anh CNTT cơ bản 2', '{"reg1":0.1,"reg2":0.1,"reg3":0.1,"mid":0.2,"fin":0.5}'),
+('FL6087', 'Tiếng Anh chuyên ngành', '{"reg1":0.1,"reg2":0.1,"reg3":0.1,"mid":0.2,"fin":0.5}');
 -- ============================================================
 -- 3. USERS (Người dùng) - 5 users
 -- ============================================================
@@ -286,18 +287,18 @@ INSERT INTO students (sid, fname, lname, dob, address, cid, phone, email, gender
 -- ============================================================
 INSERT INTO scores (sectional_class_id, student_id, regular1, regular2, regular3, midterm, final) VALUES
 -- Điểm cho Lưu Công Vinh (2022602800)
-(1, '2022602800', 8.5, 9.0, 8.0, 9.0, 10.0),
+(1, '2022602800', 8.5, 9.0, 8.0, 0.0, 10.0), -- 1 is PE6021 (Midterm 0)
 (3, '2022602800', 8.0, 8.5, 9.0, 9.5, 10.0),
-(4, '2022602800', 9.0, 9.5, 8.5, 9.5, 10.0),
+(4, '2022602800', 9.0, 9.5, 0.0, 9.5, 10.0), -- 4 is BS6002 (Reg3 0)
 (5, '2022602800', 8.5, 8.0, 9.0, 9.5, 10.0),
-(16, '2022602800', 8.0, 9.0, 8.5, 9.0, 9.5),
+(16, '2022602800', 8.0, 9.0, 0.0, 9.0, 9.5), -- 16 is LP6010 (Reg3 0)
 -- Điểm cho Nguyễn Anh Quân (2022605001)
 (9, '2022605001', 8.0, 8.5, 9.0, 9.5, 10.0),
-(10, '2022605001', 8.5, 9.0, 8.0, 9.5, 4.0),
+(10, '2022605001', 8.5, 9.0, 0.0, 9.5, 4.0), -- 10 is BS6002 (Reg3 0)
 (22, '2022605001', 9.0, 8.5, 9.5, 9.0, 5.5),
-(23, '2022605001', 8.0, 8.0, 8.5, 9.5, 10.0),
+(23, '2022605001', 8.0, 8.0, 0.0, 9.5, 10.0), -- 23 is LP6010 (Reg3 0)
 -- Điểm cho Nguyễn Anh Lạc (2022606001)
 (24, '2022606001', 7.0, 7.5, 8.0, 9.5, 10.0),
-(25, '2022606001', 8.5, 8.0, 9.0, 8.0, 8.0),
+(25, '2022606001', 8.5, 8.0, 0.0, 8.0, 8.0), -- 25 is LP6012 (Reg3 0)
 (29, '2022606001', 9.0, 9.5, 8.5, 9.5, 9.0),
 (54, '2022606001', 8.0, 8.5, 9.0, 9.0, 7.0);
