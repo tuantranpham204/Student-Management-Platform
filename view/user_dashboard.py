@@ -524,8 +524,8 @@ class UserDashboard(tk.Frame):
         
         scrollbar = ttk.Scrollbar(tree_frame, orient='vertical', command=tree.yview)
         tree.configure(yscrollcommand=scrollbar.set)
-        
         tree.pack(side='left', fill='both', expand=True)
+        tree.bind('<Double-Button-1>', lambda e: self.on_student_double_click(tree))
         scrollbar.pack(side='right', fill='y')
         
         def on_class_select(event):
@@ -579,12 +579,33 @@ class UserDashboard(tk.Frame):
         
         self.grid_rowconfigure(2, weight=1)
         self.grid_columnconfigure(0, weight=1)
-    
+
+    def on_student_double_click(self, tree):
+        """Xử lý khi double-click vào sinh viên trong danh sách"""
+        import tkinter as tk
+        from tkinter import messagebox
+        
+        # Lấy item được chọn
+        selected_item = tree.selection()
+        if not selected_item:
+            return
+        
+        # Lấy giá trị của dòng được chọn
+        values = tree.item(selected_item[0], 'values')
+        if not values or len(values) < 2:
+            return
+        
+        # values[1] là MSSV (student_id)
+        student_id = values[1]
+        
+        # Hiển thị chi tiết điểm
+        self.show_student_score_detail(student_id)
+        
     def show_all_departmental_classes_detail(self):
         """Hiển thị chi tiết tất cả lớp"""
         self.clear_frame()
         self.parent.geometry("1400x800")
-        
+            
         # Header
         header_frame = tk.Frame(self, bg='#2C3E50', height=70)
         header_frame.grid(row=0, column=0, sticky='ew', columnspan=2)
@@ -625,6 +646,8 @@ class UserDashboard(tk.Frame):
         tree.configure(yscrollcommand=scrollbar.set)
         
         tree.pack(side='left', fill='both', expand=True)
+        tree.bind('<Double-Button-1>', lambda e: self.on_student_double_click(tree))
+
         scrollbar.pack(side='right', fill='y')
         
         self.grid_rowconfigure(1, weight=1)
@@ -872,6 +895,253 @@ class UserDashboard(tk.Frame):
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
     
+    def show_student_score_detail(self, student_id):
+        """Hiển thị chi tiết điểm của sinh viên"""
+        import tkinter as tk
+        from tkinter import ttk
+        from service.grade_statistics import get_student_detailed_scores, get_letter_grade
+        
+        # Lấy dữ liệu
+        data = get_student_detailed_scores(student_id)
+        if not data:
+            from tkinter import messagebox
+            messagebox.showerror("Lỗi", "Không tìm thấy thông tin sinh viên!")
+            return
+        
+        # Xóa frame hiện tại
+        self.clear_frame()
+        self.parent.geometry("1600x900")
+        
+        # ========== HEADER ==========
+        header_frame = tk.Frame(self, bg='#2C3E50', height=70)
+        header_frame.grid(row=0, column=0, sticky='ew', columnspan=2)
+        header_frame.grid_propagate(False)
+        
+        back_btn = tk.Button(
+            header_frame, 
+            text="← Quay lại Thống kê điểm",
+            font=("Arial", 12, "bold"), 
+            bg="#E74C3C", 
+            fg="white",
+            relief="flat", 
+            padx=15, 
+            pady=8, 
+            cursor="hand2",
+            command=self.show_class_grade_statistics_detail
+        )
+        back_btn.pack(side='left', padx=20, pady=15)
+        
+        title = tk.Label(
+            header_frame, 
+            text=f"📊 CHI TIẾT ĐIỂM: {data['student_name']}",
+            font=("Arial", 18, "bold"), 
+            bg="#2C3E50", 
+            fg="white"
+        )
+        title.pack(side='left', padx=30, pady=15)
+        
+        # ========== THÔNG TIN SINH VIÊN ==========
+        info_frame = tk.Frame(self, bg='white', relief='solid', bd=2)
+        info_frame.grid(row=1, column=0, sticky='ew', padx=30, pady=(30, 10))
+        
+        tk.Label(
+            info_frame, 
+            text="THÔNG TIN SINH VIÊN", 
+            font=("Arial", 14, "bold"), 
+            bg='#3498DB', 
+            fg='white',
+            padx=10, 
+            pady=5
+        ).pack(fill='x')
+        
+        info_content = tk.Frame(info_frame, bg='white')
+        info_content.pack(fill='x', padx=20, pady=10)
+        
+        # Hiển thị thông tin
+        info_labels = [
+            ("MSSV:", data['student_id']),
+            ("Họ và tên:", data['student_name']),
+            ("Ngày sinh:", data['student_dob']),
+            ("Giới tính:", data['student_gender']),
+            ("Lớp:", data['student_class'])
+        ]
+        
+        for i, (label, value) in enumerate(info_labels):
+            row_frame = tk.Frame(info_content, bg='white')
+            row_frame.pack(fill='x', pady=2)
+            
+            tk.Label(
+                row_frame, 
+                text=label, 
+                font=("Arial", 11, "bold"),
+                bg='white', 
+                width=15, 
+                anchor='w'
+            ).pack(side='left')
+            
+            tk.Label(
+                row_frame, 
+                text=str(value), 
+                font=("Arial", 11),
+                bg='white', 
+                anchor='w'
+            ).pack(side='left', padx=10)
+        
+        # ========== BẢNG ĐIỂM CHI TIẾT ==========
+        tree_frame = tk.Frame(self, bg='white')
+        tree_frame.grid(row=2, column=0, sticky='nsew', padx=30, pady=10)
+        
+        # Tạo Treeview
+        columns = (
+            'stt', 'subject_id', 'subject_name', 'coff',
+            'regular1', 'regular2', 'regular3', 'midterm', 
+            'final', 'average', 'gpa_4', 'letter_grade'
+        )
+        
+        tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=15)
+        
+        # Định nghĩa headers
+        headers = {
+            'stt': 'STT',
+            'subject_id': 'Mã MH',
+            'subject_name': 'Tên môn học',
+            'coff': 'Hệ số',
+            'regular1': 'Regular 1',
+            'regular2': 'Regular 2',
+            'regular3': 'Regular 3',
+            'midterm': 'Midterm',
+            'final': 'Final',
+            'average': 'TB (10)',
+            'gpa_4': 'GPA (4)',
+            'letter_grade': 'Xếp loại'
+        }
+        
+        # Định nghĩa độ rộng cột
+        widths = {
+            'stt': 50, 
+            'subject_id': 80, 
+            'subject_name': 250, 
+            'coff': 60,
+            'regular1': 80, 
+            'regular2': 80, 
+            'regular3': 80,
+            'midterm': 80, 
+            'final': 80, 
+            'average': 80,
+            'gpa_4': 80, 
+            'letter_grade': 80
+        }
+        
+        for col in columns:
+            tree.heading(col, text=headers[col])
+            tree.column(col, width=widths[col], anchor='center')
+        
+        tree.column('subject_name', anchor='w')  # Tên môn căn trái
+        
+        # Insert dữ liệu
+        for idx, score in enumerate(data['scores'], 1):
+            # Tô màu theo xếp loại
+            grade = score['letter_grade']
+            if grade == 'A':
+                tag = 'excellent'
+            elif grade in ['B+', 'B']:
+                tag = 'good'
+            elif grade in ['C+', 'C']:
+                tag = 'average'
+            elif grade in ['D+', 'D']:
+                tag = 'poor'
+            else:
+                tag = 'fail'
+            
+            tree.insert('', 'end', values=(
+                idx,
+                score['subject_id'],
+                score['subject_name'],
+                score['subject_coff'],
+                score['regular1'],
+                score['regular2'],
+                score['regular3'],
+                score['midterm'],
+                score['final'],
+                score['average'],
+                score['gpa_4'],
+                score['letter_grade']
+            ), tags=(tag,))
+        
+        # Cấu hình màu sắc
+        tree.tag_configure('excellent', background='#D4EDDA')
+        tree.tag_configure('good', background='#D1ECF1')
+        tree.tag_configure('average', background='#FFF3CD')
+        tree.tag_configure('poor', background='#F8D7DA')
+        tree.tag_configure('fail', background='#F5C6CB')
+        
+        # Scrollbar
+        scrollbar = ttk.Scrollbar(tree_frame, orient='vertical', command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        
+        tree.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+        
+        # ========== TỔNG KẾT ==========
+        summary_frame = tk.Frame(self, bg='white', relief='solid', bd=2)
+        summary_frame.grid(row=3, column=0, sticky='ew', padx=30, pady=(10, 30))
+        
+        # Tính tổng kết
+        total_subjects = len(data['scores'])
+        if total_subjects > 0:
+            total_avg_10 = sum(s['average'] for s in data['scores']) / total_subjects
+            total_gpa_4 = sum(s['gpa_4'] for s in data['scores']) / total_subjects
+            overall_grade = get_letter_grade(total_avg_10)
+        else:
+            total_avg_10 = 0
+            total_gpa_4 = 0
+            overall_grade = 'N/A'
+        
+        tk.Label(
+            summary_frame, 
+            text="TỔNG KẾT", 
+            font=("Arial", 14, "bold"), 
+            bg='#27AE60', 
+            fg='white',
+            padx=10, 
+            pady=5
+        ).pack(fill='x')
+        
+        summary_content = tk.Frame(summary_frame, bg='white')
+        summary_content.pack(fill='x', padx=20, pady=10)
+        
+        summary_labels = [
+            ("Tổng số môn:", total_subjects),
+            ("Điểm TB (Thang 10):", f"{total_avg_10:.2f}"),
+            ("GPA (Thang 4):", f"{total_gpa_4:.2f}"),
+            ("Xếp loại tổng kết:", overall_grade)
+        ]
+        
+        for label, value in summary_labels:
+            row_frame = tk.Frame(summary_content, bg='white')
+            row_frame.pack(fill='x', pady=2)
+            
+            tk.Label(
+                row_frame, 
+                text=label, 
+                font=("Arial", 12, "bold"),
+                bg='white', 
+                width=20, 
+                anchor='w'
+            ).pack(side='left')
+            
+            tk.Label(
+                row_frame, 
+                text=str(value), 
+                font=("Arial", 12),
+                bg='white', 
+                fg='#E74C3C', 
+                anchor='w'
+            ).pack(side='left', padx=10)
+        
+        # Cấu hình grid
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_columnconfigure(0, weight=1)
     def go_back_to_dashboard(self):
         """Quay lại dashboard chính"""
         self.clear_frame()
