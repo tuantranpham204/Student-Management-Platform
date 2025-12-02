@@ -14,6 +14,11 @@ from service.departmental_class import get_all_classes as get_all_departmental_c
 from service.sectional_class import get_all_classes as get_all_sectional_classes
 class UserDashboard(tk.Frame):
     def __init__(self, parent, username):
+        self.subjects = get_all_subjects()
+        self.departments = get_all_departments()
+        self.majors = get_all_majors()
+        self.departmental_classes = get_all_departmental_classes()
+        self.sectional_classes = get_all_sectional_classes()
         super().__init__(parent)
         
         # Load dữ liệu thống kê
@@ -1180,6 +1185,6 @@ class UserDashboard(tk.Frame):
         self.grid_columnconfigure(0, weight=1)
     def go_back_to_dashboard(self):
         """Quay lại dashboard chính"""
->>>>>>> NgocHai1
+
         self.clear_frame()
         self.widgets()

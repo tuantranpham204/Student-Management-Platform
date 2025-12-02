@@ -50,16 +50,9 @@ status = {
     "1": "Active",
     "2": "Graduated",
     "-1": "Repeated"
-    "0": "Inactive",
-    "1": "Active",
-    "2": "Graduated",
-    "-1": "Repeated"
 }
 
 gender_get = {
-    1: True,
-    0: False,
-    -1: None
     1: True,
     0: False,
     -1: None

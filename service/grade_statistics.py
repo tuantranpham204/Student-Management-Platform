@@ -66,10 +66,12 @@ def get_class_statistics(class_id):
         subject_count = 0
         
         for score in scores:
-            avg = calculate_subject_average(
-                score.regular1, score.regular2, score.regular3,
-                score.midterm, score.final
-            )
+            # Sử dụng coefficient mặc định đơn giản
+            default_coeff = {
+                'reg1': 0.1/3, 'reg2': 0.1/3, 'reg3': 0.1/3,
+                'mid': 0.3, 'fin': 0.6
+            }
+            avg = calculate_subject_average(score, default_coeff)
             total_score_10 += avg
             total_gpa_4 += convert_to_gpa_4(avg)
             subject_count += 1
@@ -132,10 +134,11 @@ def get_student_detailed_scores(student_id):
             continue
         
         # Tính điểm trung bình môn
-        avg = calculate_subject_average(
-            score.regular1, score.regular2, score.regular3,
-            score.midterm, score.final
-        )
+        default_coeff = {
+            'reg1': 0.1/3, 'reg2': 0.1/3, 'reg3': 0.1/3,
+            'mid': 0.3, 'fin': 0.6
+        }
+        avg = calculate_subject_average(score, default_coeff)
         
         detailed_scores.append({
             'subject_id': subject.id,

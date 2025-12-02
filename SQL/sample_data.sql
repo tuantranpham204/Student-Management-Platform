@@ -287,7 +287,6 @@ INSERT INTO students (sid, fname, lname, dob, address, cid, phone, email, gender
 -- ============================================================
 INSERT INTO scores (sectional_class_id, student_id, regular1, regular2, regular3, midterm, final) VALUES
 -- Điểm cho Lưu Công Vinh (2022602800)
-<<<<<<< HEAD
 (1, '2022602800', 8.5, 9.0, 8.0, 0.0, 10.0), -- 1 is PE6021 (Midterm 0)
 (3, '2022602800', 8.0, 8.5, 9.0, 9.5, 10.0),
 (4, '2022602800', 9.0, 9.5, 0.0, 9.5, 10.0), -- 4 is BS6002 (Reg3 0)
