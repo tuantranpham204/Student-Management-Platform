@@ -11,16 +11,16 @@ TRUNCATE TABLE users;
 TRUNCATE TABLE subjects;
 TRUNCATE TABLE departments;
 SET FOREIGN_KEY_CHECKS = 1;
--- ============================================================
+
 -- 1. DEPARTMENTS (Khoa) - 5 khoa
--- ============================================================
+
 INSERT INTO departments (name) VALUES
 ('Công nghệ thông tin'),        -- ID 1
 ('Kinh tế'),                     -- ID 2
 ('Kỹ thuật'),                    -- ID 3
 ('Ngoại ngữ'),                   -- ID 4
 ('Khoa học tự nhiên');           -- ID 5
--- ============================================================
+
 -- 2. SUBJECTS (Môn học) - 30 môn với các hệ số khác nhau
 -- CONFIG: JSON {"reg1": 0.x, "reg2": 0.x, "reg3": 0.x, "mid": 0.x, "fin": 0.x}
 -- ============================================================
