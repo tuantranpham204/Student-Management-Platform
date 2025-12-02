@@ -49,7 +49,60 @@ def get_letter_grade(score_10):
     elif score_10 >= 4.0: return 'D'
     else: return 'F'
 
-
+def get_coefficient_name(coff_json):
+    """Chuyển đổi JSON coefficient thành tên hệ số"""
+    if not coff_json:
+        return "Không xác định"
+    
+    # Parse JSON nếu là string
+    if isinstance(coff_json, str):
+        try:
+            import json
+            # Thay single quotes bằng double quotes để parse JSON đúng
+            coff_str = coff_json.replace("'", '"')
+            coff = json.loads(coff_str)
+            print(f"✅ Parsed successfully: {coff}")
+        except Exception as e:
+            print(f"❌ ERROR parsing coff: {coff_json} -> {e}")
+            # Fallback: trả về chuỗi rút gọn thay vì chuỗi gốc
+            return "Hệ số không xác định"
+    else:
+        coff = coff_json
+        print(f"✅ Already dict: {coff}")
+    
+    # Debug: in ra giá trị để kiểm tra
+    print(f"🔍 Checking: reg1={coff.get('reg1')}, reg2={coff.get('reg2')}, reg3={coff.get('reg3')}, mid={coff.get('mid')}, fin={coff.get('fin')}")
+    
+    # Mapping các hệ số
+    # Hệ số 1: Thể chất (reg1:0.2, reg2:0.2, reg3:0.1, mid:0.0, fin:0.5)
+    if (coff.get('reg1') == 0.2 and coff.get('reg2') == 0.2 and 
+        coff.get('reg3') == 0.1 and coff.get('mid') == 0.0 and coff.get('fin') == 0.5):
+        print("✅ Matched: Hệ số 1")
+        return "Hệ số 1 (Thể chất)"
+    
+    # Hệ số 2: Cơ sở ngành (reg1:0.1, reg2:0.1, reg3:0.1, mid:0.2, fin:0.5)
+    elif (coff.get('reg1') == 0.1 and coff.get('reg2') == 0.1 and 
+          coff.get('reg3') == 0.1 and coff.get('mid') == 0.2 and coff.get('fin') == 0.5):
+        print("✅ Matched: Hệ số 2")
+        return "Hệ số 2 (Cơ sở ngành)"
+    
+    # Hệ số 3: Đại cương (reg1:0.1, reg2:0.1, reg3:0.0, mid:0.3, fin:0.5)
+    elif (coff.get('reg1') == 0.1 and coff.get('reg2') == 0.1 and 
+          coff.get('reg3') == 0.0 and coff.get('mid') == 0.3 and coff.get('fin') == 0.5):
+        print("✅ Matched: Hệ số 3")
+        return "Hệ số 3 (Đại cương)"
+    
+    # Hệ số 4: Chuyên ngành (reg1:0.2, reg2:0.2, reg3:0.0, mid:0.0, fin:0.6)
+    elif (coff.get('reg1') == 0.2 and coff.get('reg2') == 0.2 and 
+          coff.get('reg3') == 0.0 and coff.get('mid') == 0.0 and coff.get('fin') == 0.6):
+        print("✅ Matched: Hệ số 4")
+        return "Hệ số 4 (Chuyên ngành)"
+    
+    # Hệ số 5: Ngoại ngữ (giống hệ số 2)
+    
+    else:
+        print(f"⚠️ No match found, returning custom")
+        return "Hệ số tùy chỉnh"
 def get_class_statistics(class_id):
     """Lấy thống kê điểm của một lớp"""
     from service.student import get_students_by_class

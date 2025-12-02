@@ -12,6 +12,7 @@ from service.department import get_all_departments
 from service.major import get_all_majors
 from service.departmental_class import get_all_classes as get_all_departmental_classes
 from service.sectional_class import get_all_classes as get_all_sectional_classes
+from service.grade_statistics import get_coefficient_name
 class UserDashboard(tk.Frame):
     def __init__(self, parent, username):
         self.subjects = get_all_subjects()
@@ -336,7 +337,7 @@ class UserDashboard(tk.Frame):
         colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE']
         wedges, texts, autotexts = ax3.pie(
             coff_groups.values(), 
-            labels=[f"Hệ số {k}" for k in coff_groups.keys()], 
+            labels=[f"Hệ số {i}" for i, (key, value) in enumerate(coff_groups.items())], 
             autopct='%1.1f%%', 
             startangle=90,
             colors=colors[:len(coff_groups)],
@@ -1098,7 +1099,7 @@ class UserDashboard(tk.Frame):
                 idx,
                 score['subject_id'],
                 score['subject_name'],
-                score['subject_coff'],
+                get_coefficient_name(score['subject_coff']),
                 score['regular1'],
                 score['regular2'],
                 score['regular3'],
