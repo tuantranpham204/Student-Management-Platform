@@ -182,7 +182,7 @@ class UniversityManagement(tk.Frame):
 
         # --- GLOBAL CONTROLS ---
         self.fr_global = tk.Frame(self.fr_mal)
-        self.fr_global.grid(row=4, column=0, columnspan=2, pady=20, sticky='ew')
+        self.fr_global.grid(row=4, column=0, columnspan=2, pady=10, sticky='new')
 
         tk.Button(self.fr_global, text="⬅ EXIT / BACK TO DASHBOARD", bg="#E74C3C", fg="white",
                   font=("Arial", 10, "bold"), command=self.go_back).pack(fill='x', padx=50)
@@ -199,9 +199,6 @@ class UniversityManagement(tk.Frame):
                   command=lambda: self.handle_action('delete', entity_type)).grid(row=1, column=0, padx=2, pady=2)
         tk.Button(btn_fr, text="Search", width=8, bg="#D6EAF8",
                   command=lambda: self.handle_action('search', entity_type)).grid(row=1, column=1, padx=2, pady=2)
-        tk.Button(btn_fr, text="Show All / Clear", width=18,
-                  command=lambda: self.load_data(entity_type)).grid(row=2, column=0, columnspan=2, padx=2, pady=2)
-
     def setup_treeview(self):
         self.tree = ttk.Treeview(self.fr_lst, show='headings')
         self.tree.grid(row=0, column=0, sticky='nsew')

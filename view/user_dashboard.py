@@ -85,7 +85,15 @@ class UserDashboard(tk.Frame):
             widget.destroy()
     
     def log_out(self):
+        # Ẩn dashboard
         self.grid_forget()
+        
+        # Hiển thị lại màn hình login
+        from view.login import LoginView
+        login_view = LoginView(self.parent)
+        login_view.grid(row=0, column=0)
+        
+        # Reset lại cấu hình cửa sổ
         self.parent.title('Student Management')
         self.parent.geometry("2000x1000")
         self.parent.resizable(True, True)
@@ -100,7 +108,6 @@ class UserDashboard(tk.Frame):
 
     def show_statistics(self):
         self.clear_frame()
-        from view.student_statistics import StudentStatistics
 
         self.stats_view = StudentStatistics(self.parent, self.restore_dashboard)
         self.stats_view.grid(row=0, column=0, sticky='nsew')
@@ -127,11 +134,13 @@ class UserDashboard(tk.Frame):
         self.widgets()
 
     def restore_from_university_management(self):
-        if hasattr(self, 'university_management'):
-            self.university_management.destroy()
+        if hasattr(self, 'student_management'):
+            self.student_management.destroy()
+        # Khôi phục kích thước bình thường
+        self.parent.state('normal')
         self.parent.geometry("2000x1000")
-        self.student_management = StudentManagement(self.parent)
-        self.student_management.grid(row=0, column=0, padx=10, pady=10)
+        self.clear_frame()
+        self.widgets()
     
     def show_statistics(self):
         """Hiển thị trang thống kê mới"""
