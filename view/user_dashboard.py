@@ -13,6 +13,7 @@ from service.major import get_all_majors
 from service.departmental_class import get_all_classes as get_all_departmental_classes
 from service.sectional_class import get_all_classes as get_all_sectional_classes
 from service.grade_statistics import get_coefficient_name
+from service.grade_statistics import calculate_subject_average, convert_to_gpa_4
 class UserDashboard(tk.Frame):
     def __init__(self, parent, username):
         self.subjects = get_all_subjects()
@@ -1139,9 +1140,41 @@ class UserDashboard(tk.Frame):
         
         # Tính tổng kết
         total_subjects = len(data['scores'])
+
         if total_subjects > 0:
-            total_avg_10 = sum(s['average'] for s in data['scores']) / total_subjects
-            total_gpa_4 = sum(s['gpa_4'] for s in data['scores']) / total_subjects
+            # Import các hàm cần thiết
+            from service.grade_statistics import calculate_subject_average, convert_to_gpa_4
+            from types import SimpleNamespace
+            import json
+            
+            # Tính lại điểm cho từng môn với hệ số đúng
+            total_avg_10 = 0
+            total_gpa_4 = 0
+            
+            for score_data in data['scores']:
+                # Parse hệ số từ JSON string
+                if isinstance(score_data['subject_coff'], str):
+                    coff_dict = json.loads(score_data['subject_coff'].replace("'", '"'))
+                else:
+                    coff_dict = score_data['subject_coff']
+                
+                # Tạo object score để truyền vào hàm
+                score_obj = SimpleNamespace(
+                    regular1=score_data['regular1'],
+                    regular2=score_data['regular2'],
+                    regular3=score_data['regular3'],
+                    midterm=score_data['midterm'],
+                    final=score_data['final']
+                )
+                
+                # Tính điểm trung bình môn với hệ số đúng
+                avg = calculate_subject_average(score_obj, coff_dict)
+                total_avg_10 += avg
+                total_gpa_4 += convert_to_gpa_4(avg)
+            
+            # Tính trung bình tổng
+            total_avg_10 = round(total_avg_10 / total_subjects, 2)
+            total_gpa_4 = round(total_gpa_4 / total_subjects, 2)
             overall_grade = get_letter_grade(total_avg_10)
         else:
             total_avg_10 = 0
