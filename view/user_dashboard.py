@@ -410,7 +410,7 @@ class UserDashboard(tk.Frame):
         
         # Insert dữ liệu
         for subject in sorted(self.subjects, key=lambda x: x.id):
-            tree.insert('', 'end', values=(subject.id, subject.name, subject.coff))
+            tree.insert('', 'end', values=(subject.id, subject.name, get_coefficient_name(subject.coff)))
         
         scrollbar = ttk.Scrollbar(tree_frame, orient='vertical', command=tree.yview)
         tree.configure(yscrollcommand=scrollbar.set)
@@ -698,7 +698,8 @@ class UserDashboard(tk.Frame):
         tree.configure(yscrollcommand=scrollbar.set)
         
         tree.pack(side='left', fill='both', expand=True)
-        tree.bind('<Double-Button-1>', lambda e: self.on_student_double_click(tree))
+        tree.bind('<Double-Button-1>', lambda e: self.on_departmental_class_double_click(tree))
+        # tree.bind('<Double-Button-1>', lambda e: self.on_student_double_click(tree))
 
         scrollbar.pack(side='right', fill='y')
         
@@ -756,12 +757,30 @@ class UserDashboard(tk.Frame):
         tree.configure(yscrollcommand=scrollbar.set)
         
         tree.pack(side='left', fill='both', expand=True)
+        tree.bind('<Double-Button-1>', lambda e: self.on_sectional_class_double_click(tree))
         scrollbar.pack(side='right', fill='y')
         
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
     
     # ==================== CHI TIẾT BIỂU ĐỒ 1: NGÀNH THEO KHOA ====================
+    def on_sectional_class_double_click(self, tree):
+        """Xử lý khi double-click vào lớp học phần"""
+        # Lấy item được chọn
+        selected_item = tree.selection()
+        if not selected_item:
+            return
+        
+        # Lấy giá trị của dòng được chọn
+        values = tree.item(selected_item[0], 'values')
+        if not values or len(values) < 1:
+            return
+        
+        # values[0] là class_id (Mã Lớp HP)
+        sectional_class_id = values[0]
+        
+        # Hiển thị danh sách học sinh
+        self.show_students_in_sectional_class(sectional_class_id)
     
     def show_major_by_dept_detail(self):
         """Hiển thị chi tiết ngành theo khoa"""
@@ -945,6 +964,333 @@ class UserDashboard(tk.Frame):
         scrollbar.pack(side='right', fill='y')
         
         self.grid_rowconfigure(1, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+    def on_student_click_for_score_input(self, tree, sectional_class_id):
+        """Xử lý khi click vào sinh viên để nhập điểm"""
+        from service.score import get_scores_by_student, update_score
+        import tkinter as tk
+        from tkinter import messagebox
+        
+        # Lấy item được chọn
+        selected_item = tree.selection()
+        if not selected_item:
+            return
+        
+        values = tree.item(selected_item[0], 'values')
+        if not values or len(values) < 2:
+            return
+        
+        student_id = values[1]  # MSSV
+        student_name = values[2]  # Họ tên
+        
+        # Lấy điểm hiện tại của sinh viên trong lớp này
+        scores = get_scores_by_student(student_id)
+        current_score = None
+        for score in scores:
+            if score.sectional_class_id == sectional_class_id:
+                current_score = score
+                break
+        
+        # Tạo popup window
+        popup = tk.Toplevel(self.parent)
+        popup.title(f"Nhập điểm - {student_name}")
+        popup.geometry("500x400")
+        popup.configure(bg='white')
+        
+        # Header
+        header = tk.Label(
+            popup,
+            text=f"📝 NHẬP ĐIỂM CHO SINH VIÊN",
+            font=("Arial", 16, "bold"),
+            bg="#3498DB",
+            fg="white",
+            pady=15
+        )
+        header.pack(fill='x')
+        
+        # Thông tin sinh viên
+        info_frame = tk.Frame(popup, bg='white')
+        info_frame.pack(fill='x', padx=20, pady=10)
+        
+        tk.Label(
+            info_frame,
+            text=f"MSSV: {student_id}",
+            font=("Arial", 11, "bold"),
+            bg='white'
+        ).pack(anchor='w')
+        
+        tk.Label(
+            info_frame,
+            text=f"Họ tên: {student_name}",
+            font=("Arial", 11, "bold"),
+            bg='white'
+        ).pack(anchor='w')
+        
+        # Form nhập điểm
+        form_frame = tk.Frame(popup, bg='white')
+        form_frame.pack(fill='both', expand=True, padx=20, pady=10)
+        
+        score_labels = [
+            ("Regular 1:", 'regular1'),
+            ("Regular 2:", 'regular2'),
+            ("Regular 3:", 'regular3'),
+            ("Midterm:", 'midterm'),
+            ("Final:", 'final')
+        ]
+        
+        entries = {}
+        
+        for idx, (label, field) in enumerate(score_labels):
+            row_frame = tk.Frame(form_frame, bg='white')
+            row_frame.pack(fill='x', pady=8)
+            
+            tk.Label(
+                row_frame,
+                text=label,
+                font=("Arial", 11, "bold"),
+                bg='white',
+                width=12,
+                anchor='w'
+            ).pack(side='left')
+            
+            entry = tk.Entry(row_frame, font=("Arial", 11), width=15)
+            entry.pack(side='left', padx=10)
+            
+            # Điền điểm hiện tại nếu có
+            if current_score:
+                current_value = getattr(current_score, field, None)
+                if current_value is not None:
+                    entry.insert(0, str(current_value))
+            
+            entries[field] = entry
+        
+        # Buttons
+        button_frame = tk.Frame(popup, bg='white')
+        button_frame.pack(fill='x', padx=20, pady=20)
+        
+        def save_scores():
+            """Lưu điểm"""
+            try:
+                # Lấy giá trị từ form
+                new_scores = {}
+                for field, entry in entries.items():
+                    value = entry.get().strip()
+                    if value:
+                        new_scores[field] = float(value)
+                        # Kiểm tra điểm hợp lệ (0-10)
+                        if not (0 <= new_scores[field] <= 10):
+                            messagebox.showerror("Lỗi", f"Điểm {field} phải từ 0 đến 10!")
+                            return
+                    else:
+                        new_scores[field] = None
+                
+                # Cập nhật điểm
+                if current_score:
+                    # Update existing score
+                    current_score.regular1 = new_scores.get('regular1')
+                    current_score.regular2 = new_scores.get('regular2')
+                    current_score.regular3 = new_scores.get('regular3')
+                    current_score.midterm = new_scores.get('midterm')
+                    current_score.final = new_scores.get('final')
+                    
+                    update_score(current_score)
+                else:
+                    # Create new score
+                    from service.score import create_score
+                    from types import SimpleNamespace
+                    
+                    new_score = SimpleNamespace(
+                        student_id=student_id,
+                        sectional_class_id=sectional_class_id,
+                        regular1=new_scores.get('regular1'),
+                        regular2=new_scores.get('regular2'),
+                        regular3=new_scores.get('regular3'),
+                        midterm=new_scores.get('midterm'),
+                        final=new_scores.get('final')
+                    )
+                    create_score(new_score)
+                
+                messagebox.showinfo("Thành công", "Đã lưu điểm thành công!")
+                popup.destroy()
+                
+            except ValueError:
+                messagebox.showerror("Lỗi", "Vui lòng nhập số hợp lệ!")
+            except Exception as e:
+                messagebox.showerror("Lỗi", f"Có lỗi xảy ra: {str(e)}")
+        
+        save_btn = tk.Button(
+            button_frame,
+            text="💾 Lưu điểm",
+            font=("Arial", 12, "bold"),
+            bg="#27AE60",
+            fg="white",
+            padx=20,
+            pady=10,
+            cursor="hand2",
+            command=save_scores
+        )
+        save_btn.pack(side='left', padx=10)
+        
+        cancel_btn = tk.Button(
+            button_frame,
+            text="❌ Hủy",
+            font=("Arial", 12, "bold"),
+            bg="#E74C3C",
+            fg="white",
+            padx=20,
+            pady=10,
+            cursor="hand2",
+            command=popup.destroy
+        )
+        cancel_btn.pack(side='left', padx=10)
+    def show_students_in_sectional_class(self, sectional_class_id):
+        """Hiển thị danh sách học sinh trong lớp học phần"""
+        from service.sectional_class import get_students_by_sectional_class, get_class_by_id
+        from service.subject import get_subject_by_id
+        
+        # Lấy thông tin lớp học phần
+        sectional_class = get_class_by_id(sectional_class_id)
+        if not sectional_class:
+            from tkinter import messagebox
+            messagebox.showerror("Lỗi", "Không tìm thấy lớp học phần!")
+            return
+        
+        # Lấy thông tin môn học
+        subject = get_subject_by_id(sectional_class.subject_id) 
+        subject_name = subject.name if subject else "N/A"
+        
+        # Lấy danh sách học sinh
+        students = get_students_by_sectional_class(sectional_class_id)
+        
+        # Xóa frame hiện tại
+        self.clear_frame()
+        self.parent.geometry("1400x800")
+        
+        # ========== HEADER ==========
+        header_frame = tk.Frame(self, bg='#2C3E50', height=70)
+        header_frame.grid(row=0, column=0, sticky='ew', columnspan=2)
+        header_frame.grid_propagate(False)
+        
+        back_btn = tk.Button(
+            header_frame,
+            text="← Quay lại Danh sách lớp",
+            font=("Arial", 12, "bold"),
+            bg="#E74C3C",
+            fg="white",
+            relief="flat",
+            padx=15,
+            pady=8,
+            cursor="hand2",
+            command=self.show_all_sectional_classes_detail
+        )
+        back_btn.pack(side='left', padx=20, pady=15)
+        
+        title = tk.Label(
+            header_frame,
+            text=f"👥 DANH SÁCH SINH VIÊN: {sectional_class.name}",
+            font=("Arial", 18, "bold"),
+            bg="#2C3E50",
+            fg="white"
+        )
+        title.pack(side='left', padx=30, pady=15)
+        
+        # ========== THÔNG TIN LỚP ==========
+        info_frame = tk.Frame(self, bg='white', relief='solid', bd=2)
+        info_frame.grid(row=1, column=0, sticky='ew', padx=30, pady=(30, 10))
+        
+        tk.Label(
+            info_frame,
+            text="THÔNG TIN LỚP HỌC PHẦN",
+            font=("Arial", 14, "bold"),
+            bg='#3498DB',
+            fg='white',
+            padx=10,
+            pady=5
+        ).pack(fill='x')
+        
+        info_content = tk.Frame(info_frame, bg='white')
+        info_content.pack(fill='x', padx=20, pady=10)
+        
+        info_labels = [
+            ("Mã lớp:", sectional_class_id),
+            ("Tên lớp:", sectional_class.name),
+            ("Môn học:", subject_name),
+            ("Học kỳ:", sectional_class.semester_id),
+            ("Số sinh viên:", len(students))
+        ]
+        
+        for label, value in info_labels:
+            row_frame = tk.Frame(info_content, bg='white')
+            row_frame.pack(fill='x', pady=2)
+            
+            tk.Label(
+                row_frame,
+                text=label,
+                font=("Arial", 11, "bold"),
+                bg='white',
+                width=15,
+                anchor='w'
+            ).pack(side='left')
+            
+            tk.Label(
+                row_frame,
+                text=str(value),
+                font=("Arial", 11),
+                bg='white',
+                anchor='w'
+            ).pack(side='left', padx=10)
+        
+        # ========== BẢNG DANH SÁCH SINH VIÊN ==========
+        tree_frame = tk.Frame(self, bg='white')
+        tree_frame.grid(row=2, column=0, sticky='nsew', padx=30, pady=10)
+        
+        columns = ('stt', 'student_id', 'student_name', 'dob', 'gender')
+        tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=20)
+        
+        headers = {
+            'stt': 'STT',
+            'student_id': 'MSSV',
+            'student_name': 'Họ và tên',
+            'dob': 'Ngày sinh',
+            'gender': 'Giới tính'
+        }
+        
+        widths = {
+            'stt': 50,
+            'student_id': 120,
+            'student_name': 250,
+            'dob': 120,
+            'gender': 100
+        }
+        
+        for col in columns:
+            tree.heading(col, text=headers[col])
+            tree.column(col, width=widths[col], anchor='center')
+        
+        tree.column('student_name', anchor='w')
+        
+        # Insert dữ liệu
+        for idx, student in enumerate(sorted(students, key=lambda x: x.sid), 1):
+            tree.insert('', 'end', values=(
+                idx,
+                student.sid,
+                f"{student.fname} {student.lname}",
+                student.dob,
+                student.gender
+            ))
+        
+        # Bind double-click để mở form nhập điểm
+        tree.bind('<Double-Button-1>', 
+                lambda e: self.on_student_click_for_score_input(tree, sectional_class_id))
+        
+        scrollbar = ttk.Scrollbar(tree_frame, orient='vertical', command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        
+        tree.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+        
+        # Cấu hình grid
+        self.grid_rowconfigure(2, weight=1)
         self.grid_columnconfigure(0, weight=1)
     
     def show_student_score_detail(self, student_id):
@@ -1226,6 +1572,891 @@ class UserDashboard(tk.Frame):
         # Cấu hình grid
         self.grid_rowconfigure(2, weight=1)
         self.grid_columnconfigure(0, weight=1)
+    # ===== COPY 2 HÀM NÀY VÀO FILE user_dashboard.py =====
+# Thêm vào TRƯỚC hàm def go_back_to_dashboard(self): (dòng 1574)
+    def show_students_in_sectional_class(self, sectional_class_id):
+        """Hiển thị danh sách học sinh trong lớp học phần"""
+        from service.sectional_class import get_students_by_sectional_class, get_class_by_id
+        from service.subject import get_subject_by_id
+        
+        # Lấy thông tin lớp học phần
+        sectional_class = get_class_by_id(sectional_class_id)
+        
+        # Nếu không tìm thấy lớp, dùng thông tin mặc định
+        if not sectional_class:
+            class_name = f"Lớp {sectional_class_id}"
+            subject_name = "N/A"
+            semester_id = "N/A"
+        else:
+            class_name = sectional_class.name
+            semester_id = sectional_class.semester_id
+            # Lấy thông tin môn học
+            subject = get_subject_by_id(sectional_class.subject_id) 
+            subject_name = subject.name if subject else "N/A"
+        
+        # Lấy danh sách học sinh (có thể rỗng)
+        students = get_students_by_sectional_class(sectional_class_id)
+        
+        # Xóa frame hiện tại
+        self.clear_frame()
+        self.parent.geometry("1400x800")
+        
+        # ========== HEADER ==========
+        header_frame = tk.Frame(self, bg='#2C3E50', height=70)
+        header_frame.grid(row=0, column=0, sticky='ew', columnspan=2)
+        header_frame.grid_propagate(False)
+        
+        back_btn = tk.Button(
+            header_frame,
+            text="← Quay lại Danh sách lớp",
+            font=("Arial", 12, "bold"),
+            bg="#E74C3C",
+            fg="white",
+            relief="flat",
+            padx=15,
+            pady=8,
+            cursor="hand2",
+            command=self.show_all_sectional_classes_detail
+        )
+        back_btn.pack(side='left', padx=20, pady=15)
+        
+        title = tk.Label(
+            header_frame,
+            text=f"👥 DANH SÁCH SINH VIÊN: {class_name}",
+            font=("Arial", 18, "bold"),
+            bg="#2C3E50",
+            fg="white"
+        )
+        title.pack(side='left', padx=30, pady=15)
+        
+        # ========== THÔNG TIN LỚP ==========
+        info_frame = tk.Frame(self, bg='white', relief='solid', bd=2)
+        info_frame.grid(row=1, column=0, sticky='ew', padx=30, pady=(30, 10))
+        
+        tk.Label(
+            info_frame,
+            text="THÔNG TIN LỚP HỌC PHẦN",
+            font=("Arial", 14, "bold"),
+            bg='#3498DB',
+            fg='white',
+            padx=10,
+            pady=5
+        ).pack(fill='x')
+        
+        info_content = tk.Frame(info_frame, bg='white')
+        info_content.pack(fill='x', padx=20, pady=10)
+        
+        info_labels = [
+            ("Mã lớp:", sectional_class_id),
+            ("Tên lớp:", class_name),
+            ("Môn học:", subject_name),
+            ("Học kỳ:", semester_id),
+            ("Số sinh viên:", len(students))
+        ]
+        
+        for label, value in info_labels:
+            row_frame = tk.Frame(info_content, bg='white')
+            row_frame.pack(fill='x', pady=2)
+            
+            tk.Label(
+                row_frame,
+                text=label,
+                font=("Arial", 11, "bold"),
+                bg='white',
+                width=15,
+                anchor='w'
+            ).pack(side='left')
+            
+            tk.Label(
+                row_frame,
+                text=str(value),
+                font=("Arial", 11),
+                bg='white',
+                anchor='w'
+            ).pack(side='left', padx=10)
+        
+        # ========== BẢNG DANH SÁCH SINH VIÊN ==========
+        tree_frame = tk.Frame(self, bg='white')
+        tree_frame.grid(row=2, column=0, sticky='nsew', padx=30, pady=10)
+        
+        columns = ('stt', 'student_id', 'student_name', 'dob', 'gender')
+        tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=20)
+        
+        headers = {
+            'stt': 'STT',
+            'student_id': 'MSSV',
+            'student_name': 'Họ và tên',
+            'dob': 'Ngày sinh',
+            'gender': 'Giới tính'
+        }
+        
+        widths = {
+            'stt': 50,
+            'student_id': 120,
+            'student_name': 250,
+            'dob': 120,
+            'gender': 100
+        }
+        
+        for col in columns:
+            tree.heading(col, text=headers[col])
+            tree.column(col, width=widths[col], anchor='center')
+        
+        tree.column('student_name', anchor='w')
+        
+        # Insert dữ liệu hoặc hiển thị thông báo trống
+        if students:
+            for idx, student in enumerate(sorted(students, key=lambda x: x.sid), 1):
+                tree.insert('', 'end', values=(
+                    idx,
+                    student.sid,
+                    f"{student.fname} {student.lname}",
+                    student.dob,
+                    student.gender
+                ))
+            
+            # Bind double-click để mở form nhập điểm
+            tree.bind('<Double-Button-1>', 
+                    lambda e: self.on_student_click_for_score_input(tree, sectional_class_id))
+        else:
+            # Hiển thị thông báo danh sách trống
+            tree.insert('', 'end', values=(
+                '',
+                '',
+                '📋 Danh sách sinh viên trống - Chưa có sinh viên nào trong lớp này',
+                '',
+                ''
+            ))
+        
+        scrollbar = ttk.Scrollbar(tree_frame, orient='vertical', command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        
+        tree.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+        
+        # Cấu hình grid
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+    
+    def on_student_click_for_score_input(self, tree, sectional_class_id):
+        """Xử lý khi click vào sinh viên để nhập điểm"""
+        from service.score import get_scores_by_student, add_or_update_score
+        import tkinter as tk
+        from tkinter import messagebox
+        from types import SimpleNamespace
+        
+        # Lấy item được chọn
+        selected_item = tree.selection()
+        if not selected_item:
+            return
+        
+        values = tree.item(selected_item[0], 'values')
+        if not values or len(values) < 2 or not values[1]:
+            return
+        
+        student_id = values[1]  # MSSV
+        student_name = values[2]  # Họ tên
+        
+        # Lấy điểm hiện tại của sinh viên trong lớp này
+        scores = get_scores_by_student(student_id)
+        current_score = None
+        for score in scores:
+            if score.sectional_class_id == sectional_class_id:
+                current_score = score
+                break
+        
+        # Tạo popup window
+        popup = tk.Toplevel(self.parent)
+        popup.title(f"Nhập điểm - {student_name}")
+        popup.geometry("500x450")
+        popup.configure(bg='white')
+        
+        # Header
+        header = tk.Label(
+            popup,
+            text=f"📝 NHẬP ĐIỂM CHO SINH VIÊN",
+            font=("Arial", 16, "bold"),
+            bg="#3498DB",
+            fg="white",
+            pady=15
+        )
+        header.pack(fill='x')
+        
+        # Thông tin sinh viên
+        info_frame = tk.Frame(popup, bg='white')
+        info_frame.pack(fill='x', padx=20, pady=10)
+        
+        tk.Label(
+            info_frame,
+            text=f"MSSV: {student_id}",
+            font=("Arial", 11, "bold"),
+            bg='white'
+        ).pack(anchor='w')
+        
+        tk.Label(
+            info_frame,
+            text=f"Họ tên: {student_name}",
+            font=("Arial", 11, "bold"),
+            bg='white'
+        ).pack(anchor='w')
+        
+        # Form nhập điểm
+        form_frame = tk.Frame(popup, bg='white')
+        form_frame.pack(fill='both', expand=True, padx=20, pady=10)
+        
+        score_labels = [
+            ("Regular 1:", 'regular1'),
+            ("Regular 2:", 'regular2'),
+            ("Regular 3:", 'regular3'),
+            ("Midterm:", 'midterm'),
+            ("Final:", 'final')
+        ]
+        
+        entries = {}
+        
+        for idx, (label, field) in enumerate(score_labels):
+            row_frame = tk.Frame(form_frame, bg='white')
+            row_frame.pack(fill='x', pady=8)
+            
+            tk.Label(
+                row_frame,
+                text=label,
+                font=("Arial", 11, "bold"),
+                bg='white',
+                width=12,
+                anchor='w'
+            ).pack(side='left')
+            
+            entry = tk.Entry(row_frame, font=("Arial", 11), width=15)
+            entry.pack(side='left', padx=10)
+            
+            # Điền điểm hiện tại nếu có
+            if current_score:
+                current_value = getattr(current_score, field, None)
+                if current_value is not None:
+                    entry.insert(0, str(current_value))
+            
+            entries[field] = entry
+        
+        # Buttons
+        button_frame = tk.Frame(popup, bg='white')
+        button_frame.pack(fill='x', padx=20, pady=20)
+        
+        def save_scores():
+            """Lưu điểm"""
+            try:
+                # Lấy giá trị từ form
+                new_score = SimpleNamespace(
+                    student_id=student_id,
+                    sectional_class_id=sectional_class_id,
+                    regular1=None,
+                    regular2=None,
+                    regular3=None,
+                    midterm=None,
+                    final=None
+                )
+                
+                for field, entry in entries.items():
+                    value = entry.get().strip()
+                    if value:
+                        score_value = float(value)
+                        # Kiểm tra điểm hợp lệ (0-10)
+                        if not (0 <= score_value <= 10):
+                            messagebox.showerror("Lỗi", f"Điểm {field} phải từ 0 đến 10!")
+                            return
+                        setattr(new_score, field, score_value)
+                
+                # Lưu điểm
+                add_or_update_score(new_score)
+                
+                messagebox.showinfo("Thành công", "Đã lưu điểm thành công!")
+                popup.destroy()
+                
+                # Refresh lại trang
+                self.show_students_in_sectional_class(sectional_class_id)
+                
+            except ValueError:
+                messagebox.showerror("Lỗi", "Vui lòng nhập số hợp lệ!")
+            except Exception as e:
+                messagebox.showerror("Lỗi", f"Có lỗi xảy ra: {str(e)}")
+        
+        save_btn = tk.Button(
+            button_frame,
+            text="💾 Lưu điểm",
+            font=("Arial", 12, "bold"),
+            bg="#27AE60",
+            fg="white",
+            padx=20,
+            pady=10,
+            cursor="hand2",
+            command=save_scores
+        )
+        save_btn.pack(side='left', padx=10)
+        
+        cancel_btn = tk.Button(
+            button_frame,
+            text="❌ Hủy",
+            font=("Arial", 12, "bold"),
+            bg="#E74C3C",
+            fg="white",
+            padx=20,
+            pady=10,
+            cursor="hand2",
+            command=popup.destroy
+        )
+        cancel_btn.pack(side='left', padx=10)
+    def on_departmental_class_double_click(self, tree):
+        """Xử lý khi double-click vào lớp hành chính"""
+        # Lấy item được chọn
+        selected_item = tree.selection()
+        if not selected_item:
+            return
+        
+        # Lấy giá trị của dòng được chọn
+        values = tree.item(selected_item[0], 'values')
+        if not values or len(values) < 1:
+            return
+        
+        # values[0] là class_id (Mã Lớp)
+        class_id = values[0]
+        
+        # Hiển thị danh sách sinh viên trong lớp
+        self.show_students_in_departmental_class(class_id)
+    
+    def show_students_in_departmental_class(self, class_id):
+        """Hiển thị danh sách sinh viên trong lớp hành chính"""
+        from service.student import get_students_by_class
+        from service.departmental_class import get_class_by_id as get_dept_class
+        
+        # Lấy thông tin lớp
+        dept_class = get_dept_class(class_id)
+        class_name = dept_class.name if dept_class else f"Lớp {class_id}"
+        
+        # Lấy danh sách sinh viên
+        students = get_students_by_class(class_id)
+        
+        # Xóa frame hiện tại
+        self.clear_frame()
+        self.parent.geometry("1600x900")
+        
+        # ========== HEADER ==========
+        header_frame = tk.Frame(self, bg='#2C3E50', height=70)
+        header_frame.grid(row=0, column=0, sticky='ew', columnspan=2)
+        header_frame.grid_propagate(False)
+        
+        back_btn = tk.Button(
+            header_frame,
+            text="← Quay lại Danh sách lớp",
+            font=("Arial", 12, "bold"),
+            bg="#E74C3C",
+            fg="white",
+            relief="flat",
+            padx=15,
+            pady=8,
+            cursor="hand2",
+            command=self.show_all_departmental_classes_detail
+        )
+        back_btn.pack(side='left', padx=20, pady=15)
+        
+        title = tk.Label(
+            header_frame,
+            text=f"👥 DANH SÁCH SINH VIÊN: {class_name}",
+            font=("Arial", 18, "bold"),
+            bg="#2C3E50",
+            fg="white"
+        )
+        title.pack(side='left', padx=30, pady=15)
+        
+        # ========== THÔNG TIN LỚP ==========
+        info_frame = tk.Frame(self, bg='white', relief='solid', bd=2)
+        info_frame.grid(row=1, column=0, sticky='ew', padx=30, pady=(30, 10))
+        
+        tk.Label(
+            info_frame,
+            text="THÔNG TIN LỚP",
+            font=("Arial", 14, "bold"),
+            bg='#3498DB',
+            fg='white',
+            padx=10,
+            pady=5
+        ).pack(fill='x')
+        
+        info_content = tk.Frame(info_frame, bg='white')
+        info_content.pack(fill='x', padx=20, pady=10)
+        
+        tk.Label(
+            info_content,
+            text=f"Mã lớp: {class_id}  |  Tên lớp: {class_name}  |  Số sinh viên: {len(students)}",
+            font=("Arial", 11, "bold"),
+            bg='white'
+        ).pack(anchor='w', pady=5)
+        
+        # ========== BẢNG DANH SÁCH SINH VIÊN ==========
+        tree_frame = tk.Frame(self, bg='white')
+        tree_frame.grid(row=2, column=0, sticky='nsew', padx=30, pady=10)
+        
+        columns = ('stt', 'student_id', 'student_name', 'dob', 'gender')
+        tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=20)
+        
+        headers = {
+            'stt': 'STT',
+            'student_id': 'MSSV',
+            'student_name': 'Họ và tên',
+            'dob': 'Ngày sinh',
+            'gender': 'Giới tính'
+        }
+        
+        widths = {
+            'stt': 50,
+            'student_id': 120,
+            'student_name': 300,
+            'dob': 120,
+            'gender': 100
+        }
+        
+        for col in columns:
+            tree.heading(col, text=headers[col])
+            tree.column(col, width=widths[col], anchor='center')
+        
+        tree.column('student_name', anchor='w')
+        
+        # Insert dữ liệu
+        if students:
+            for idx, student in enumerate(sorted(students, key=lambda x: x.sid), 1):
+                tree.insert('', 'end', values=(
+                    idx,
+                    student.sid,
+                    f"{student.fname} {student.lname}",
+                    student.dob,
+                    student.gender
+                ))
+            
+            # Bind double-click để xem điểm chi tiết
+            tree.bind('<Double-Button-1>', 
+                    lambda e: self.on_student_in_class_double_click(tree))
+        else:
+            tree.insert('', 'end', values=(
+                '',
+                '',
+                '📋 Danh sách sinh viên trống',
+                '',
+                ''
+            ))
+        
+        scrollbar = ttk.Scrollbar(tree_frame, orient='vertical', command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        
+        tree.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+        
+        # Cấu hình grid
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+    
+    def on_student_in_class_double_click(self, tree):
+        """Xử lý khi double-click vào sinh viên để quản lý điểm"""
+        from service.score import get_scores_by_student, add_or_update_score, delete_score
+        from service.sectional_class import get_all_classes
+        from service.subject import get_subject_by_id
+        import tkinter as tk
+        from tkinter import messagebox, ttk
+        from types import SimpleNamespace
+        
+        # Lấy item được chọn
+        selected_item = tree.selection()
+        if not selected_item:
+            return
+        
+        values = tree.item(selected_item[0], 'values')
+        if not values or len(values) < 2 or not values[1]:
+            return
+        
+        student_id = values[1]  # MSSV
+        student_name = values[2]  # Họ tên
+        
+        # Tạo popup window
+        popup = tk.Toplevel(self.parent)
+        popup.title(f"Quản lý điểm - {student_name}")
+        popup.geometry("1000x700")
+        popup.configure(bg='white')
+        
+        # Header
+        header = tk.Label(
+            popup,
+            text=f"📚 QUẢN LÝ ĐIỂM: {student_name} ({student_id})",
+            font=("Arial", 16, "bold"),
+            bg="#2C3E50",
+            fg="white",
+            pady=15
+        )
+        header.pack(fill='x')
+        
+        # Frame chứa danh sách môn học
+        list_frame = tk.Frame(popup, bg='white')
+        list_frame.pack(fill='both', expand=True, padx=20, pady=10)
+        
+        tk.Label(
+            list_frame,
+            text="DANH SÁCH MÔN HỌC VÀ ĐIỂM",
+            font=("Arial", 12, "bold"),
+            bg='white'
+        ).pack(anchor='w', pady=(0, 10))
+        
+        # Treeview hiển thị môn học và điểm
+        tree_frame = tk.Frame(list_frame, bg='white')
+        tree_frame.pack(fill='both', expand=True)
+        
+        columns = ('class_id', 'subject', 'reg1', 'reg2', 'reg3', 'mid', 'final', 'avg')
+        score_tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=15)
+        
+        headers = {
+            'class_id': 'Mã LHP',
+            'subject': 'Môn học',
+            'reg1': 'Reg1',
+            'reg2': 'Reg2',
+            'reg3': 'Reg3',
+            'mid': 'Mid',
+            'final': 'Final',
+            'avg': 'TB'
+        }
+        
+        widths = {
+            'class_id': 80,
+            'subject': 250,
+            'reg1': 50,
+            'reg2': 50,
+            'reg3': 50,
+            'mid': 50,
+            'final': 50,
+            'avg': 60
+        }
+        
+        for col in columns:
+            score_tree.heading(col, text=headers[col])
+            score_tree.column(col, width=widths[col], anchor='center')
+        
+        score_tree.column('subject', anchor='w')
+        
+        def load_scores():
+            """Tải lại danh sách điểm"""
+            # Xóa dữ liệu cũ
+            for item in score_tree.get_children():
+                score_tree.delete(item)
+            
+            # Lấy điểm của sinh viên
+            scores = get_scores_by_student(student_id)
+            all_classes = get_all_classes()
+            
+            for score in scores:
+                # Tìm thông tin lớp học phần
+                sec_class = next((c for c in all_classes if c.id == score.sectional_class_id), None)
+                if sec_class:
+                    subject = get_subject_by_id(sec_class.subject_id)
+                    subject_name = subject.name if subject else "N/A"
+                else:
+                    subject_name = "N/A"
+                
+                # Tính trung bình (nếu có đủ điểm)
+                scores_list = [
+                    score.regular1, score.regular2, score.regular3,
+                    score.midterm, score.final
+                ]
+                if all(s is not None for s in scores_list):
+                    # Giả sử hệ số: reg1=0.1, reg2=0.1, reg3=0.1, mid=0.2, final=0.5
+                    avg = (score.regular1 * 0.1 + score.regular2 * 0.1 + 
+                           score.regular3 * 0.1 + score.midterm * 0.2 + 
+                           score.final * 0.5)
+                    avg_str = f"{avg:.2f}"
+                else:
+                    avg_str = "N/A"
+                
+                score_tree.insert('', 'end', values=(
+                    score.sectional_class_id,
+                    subject_name,
+                    score.regular1 if score.regular1 is not None else '',
+                    score.regular2 if score.regular2 is not None else '',
+                    score.regular3 if score.regular3 is not None else '',
+                    score.midterm if score.midterm is not None else '',
+                    score.final if score.final is not None else '',
+                    avg_str
+                ))
+        
+        # Load dữ liệu ban đầu
+        load_scores()
+        
+        scrollbar = ttk.Scrollbar(tree_frame, orient='vertical', command=score_tree.yview)
+        score_tree.configure(yscrollcommand=scrollbar.set)
+        
+        score_tree.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+        
+        # Frame chứa các nút
+        button_frame = tk.Frame(popup, bg='white')
+        button_frame.pack(fill='x', padx=20, pady=10)
+        
+        def add_subject():
+            """Thêm môn học mới"""
+            add_popup = tk.Toplevel(popup)
+            add_popup.title("Thêm môn học")
+            add_popup.geometry("600x500")
+            add_popup.configure(bg='white')
+            
+            tk.Label(
+                add_popup,
+                text="THÊM MÔN HỌC VÀ NHẬP ĐIỂM",
+                font=("Arial", 14, "bold"),
+                bg="#27AE60",
+                fg="white",
+                pady=10
+            ).pack(fill='x')
+            
+            form_frame = tk.Frame(add_popup, bg='white')
+            form_frame.pack(fill='both', expand=True, padx=20, pady=20)
+            
+            # Chọn lớp học phần
+            tk.Label(form_frame, text="Lớp học phần:", font=("Arial", 11, "bold"), bg='white').grid(row=0, column=0, sticky='w', pady=5)
+            
+            all_classes = get_all_classes()
+            class_options = []
+            class_dict = {}
+            
+            for c in all_classes:
+                subject = get_subject_by_id(c.subject_id)
+                subject_name = subject.name if subject else "N/A"
+                label = f"{c.id} - {c.name} ({subject_name})"
+                class_options.append(label)
+                class_dict[label] = c.id
+            
+            class_var = tk.StringVar()
+            class_combo = ttk.Combobox(form_frame, textvariable=class_var, values=class_options, width=50, state='readonly')
+            class_combo.grid(row=0, column=1, pady=5, padx=10)
+            
+            # Các ô nhập điểm
+            score_entries = {}
+            score_labels = [
+                ("Regular 1:", 'regular1'),
+                ("Regular 2:", 'regular2'),
+                ("Regular 3:", 'regular3'),
+                ("Midterm:", 'midterm'),
+                ("Final:", 'final')
+            ]
+            
+            for idx, (label, field) in enumerate(score_labels, 1):
+                tk.Label(form_frame, text=label, font=("Arial", 11, "bold"), bg='white').grid(row=idx, column=0, sticky='w', pady=5)
+                entry = tk.Entry(form_frame, font=("Arial", 11), width=20)
+                entry.grid(row=idx, column=1, sticky='w', pady=5, padx=10)
+                score_entries[field] = entry
+            
+            def save_new_subject():
+                """Lưu môn học mới"""
+                try:
+                    selected_class = class_var.get()
+                    if not selected_class:
+                        messagebox.showerror("Lỗi", "Vui lòng chọn lớp học phần!")
+                        return
+                    
+                    class_id = class_dict[selected_class]
+                    
+                    # Tạo object điểm mới
+                    new_score = SimpleNamespace(
+                        student_id=student_id,
+                        sectional_class_id=class_id,
+                        regular1=None,
+                        regular2=None,
+                        regular3=None,
+                        midterm=None,
+                        final=None
+                    )
+                    
+                    # Lấy điểm từ form
+                    for field, entry in score_entries.items():
+                        value = entry.get().strip()
+                        if value:
+                            score_value = float(value)
+                            if not (0 <= score_value <= 10):
+                                messagebox.showerror("Lỗi", f"Điểm {field} phải từ 0 đến 10!")
+                                return
+                            setattr(new_score, field, score_value)
+                    
+                    # Lưu vào database
+                    add_or_update_score(new_score)
+                    
+                    messagebox.showinfo("Thành công", "Đã thêm môn học thành công!")
+                    add_popup.destroy()
+                    load_scores()
+                    
+                except ValueError:
+                    messagebox.showerror("Lỗi", "Vui lòng nhập số hợp lệ!")
+                except Exception as e:
+                    messagebox.showerror("Lỗi", f"Có lỗi xảy ra: {str(e)}")
+            
+            btn_frame = tk.Frame(add_popup, bg='white')
+            btn_frame.pack(fill='x', padx=20, pady=10)
+            
+            tk.Button(btn_frame, text="💾 Lưu", font=("Arial", 11, "bold"), bg="#27AE60", fg="white", 
+                     padx=20, pady=8, command=save_new_subject).pack(side='left', padx=5)
+            tk.Button(btn_frame, text="❌ Hủy", font=("Arial", 11, "bold"), bg="#E74C3C", fg="white", 
+                     padx=20, pady=8, command=add_popup.destroy).pack(side='left', padx=5)
+        
+        def edit_subject():
+            """Sửa điểm môn học"""
+            selected = score_tree.selection()
+            if not selected:
+                messagebox.showwarning("Cảnh báo", "Vui lòng chọn môn học cần sửa!")
+                return
+            
+            values = score_tree.item(selected[0], 'values')
+            class_id = values[0]
+            subject_name = values[1]
+            
+            # Lấy điểm hiện tại
+            scores = get_scores_by_student(student_id)
+            current_score = next((s for s in scores if s.sectional_class_id == class_id), None)
+            
+            if not current_score:
+                messagebox.showerror("Lỗi", "Không tìm thấy điểm!")
+                return
+            
+            # Tạo popup sửa
+            edit_popup = tk.Toplevel(popup)
+            edit_popup.title(f"Sửa điểm - {subject_name}")
+            edit_popup.geometry("500x400")
+            edit_popup.configure(bg='white')
+            
+            tk.Label(
+                edit_popup,
+                text=f"SỬA ĐIỂM: {subject_name}",
+                font=("Arial", 14, "bold"),
+                bg="#3498DB",
+                fg="white",
+                pady=10
+            ).pack(fill='x')
+            
+            form_frame = tk.Frame(edit_popup, bg='white')
+            form_frame.pack(fill='both', expand=True, padx=20, pady=20)
+            
+            score_entries = {}
+            score_labels = [
+                ("Regular 1:", 'regular1'),
+                ("Regular 2:", 'regular2'),
+                ("Regular 3:", 'regular3'),
+                ("Midterm:", 'midterm'),
+                ("Final:", 'final')
+            ]
+            
+            for idx, (label, field) in enumerate(score_labels):
+                tk.Label(form_frame, text=label, font=("Arial", 11, "bold"), bg='white').grid(row=idx, column=0, sticky='w', pady=5)
+                entry = tk.Entry(form_frame, font=("Arial", 11), width=20)
+                entry.grid(row=idx, column=1, sticky='w', pady=5, padx=10)
+                
+                # Điền điểm hiện tại
+                current_value = getattr(current_score, field, None)
+                if current_value is not None:
+                    entry.insert(0, str(current_value))
+                
+                score_entries[field] = entry
+            
+            def save_edit():
+                """Lưu chỉnh sửa"""
+                try:
+                    for field, entry in score_entries.items():
+                        value = entry.get().strip()
+                        if value:
+                            score_value = float(value)
+                            if not (0 <= score_value <= 10):
+                                messagebox.showerror("Lỗi", f"Điểm {field} phải từ 0 đến 10!")
+                                return
+                            setattr(current_score, field, score_value)
+                        else:
+                            setattr(current_score, field, None)
+                    
+                    add_or_update_score(current_score)
+                    
+                    messagebox.showinfo("Thành công", "Đã cập nhật điểm thành công!")
+                    edit_popup.destroy()
+                    load_scores()
+                    
+                except ValueError:
+                    messagebox.showerror("Lỗi", "Vui lòng nhập số hợp lệ!")
+                except Exception as e:
+                    messagebox.showerror("Lỗi", f"Có lỗi xảy ra: {str(e)}")
+            
+            btn_frame = tk.Frame(edit_popup, bg='white')
+            btn_frame.pack(fill='x', padx=20, pady=10)
+            
+            tk.Button(btn_frame, text="💾 Lưu", font=("Arial", 11, "bold"), bg="#27AE60", fg="white", 
+                     padx=20, pady=8, command=save_edit).pack(side='left', padx=5)
+            tk.Button(btn_frame, text="❌ Hủy", font=("Arial", 11, "bold"), bg="#E74C3C", fg="white", 
+                     padx=20, pady=8, command=edit_popup.destroy).pack(side='left', padx=5)
+        
+        def delete_subject():
+            """Xóa môn học"""
+            selected = score_tree.selection()
+            if not selected:
+                messagebox.showwarning("Cảnh báo", "Vui lòng chọn môn học cần xóa!")
+                return
+            
+            values = score_tree.item(selected[0], 'values')
+            class_id = values[0]
+            subject_name = values[1]
+            
+            confirm = messagebox.askyesno("Xác nhận", f"Bạn có chắc muốn xóa môn '{subject_name}'?")
+            if confirm:
+                try:
+                    delete_score(class_id, student_id)
+                    messagebox.showinfo("Thành công", "Đã xóa môn học thành công!")
+                    load_scores()
+                except Exception as e:
+                    messagebox.showerror("Lỗi", f"Có lỗi xảy ra: {str(e)}")
+        
+        # Các nút chức năng
+        tk.Button(
+            button_frame,
+            text="➕ Thêm môn học",
+            font=("Arial", 11, "bold"),
+            bg="#27AE60",
+            fg="white",
+            padx=15,
+            pady=8,
+            cursor="hand2",
+            command=add_subject
+        ).pack(side='left', padx=5)
+        
+        tk.Button(
+            button_frame,
+            text="✏️ Sửa điểm",
+            font=("Arial", 11, "bold"),
+            bg="#3498DB",
+            fg="white",
+            padx=15,
+            pady=8,
+            cursor="hand2",
+            command=edit_subject
+        ).pack(side='left', padx=5)
+        
+        tk.Button(
+            button_frame,
+            text="🗑️ Xóa môn",
+            font=("Arial", 11, "bold"),
+            bg="#E74C3C",
+            fg="white",
+            padx=15,
+            pady=8,
+            cursor="hand2",
+            command=delete_subject
+        ).pack(side='left', padx=5)
+        
+        tk.Button(
+            button_frame,
+            text="❌ Đóng",
+            font=("Arial", 11, "bold"),
+            bg="#95A5A6",
+            fg="white",
+            padx=15,
+            pady=8,
+            cursor="hand2",
+            command=popup.destroy
+        ).pack(side='right', padx=5)
     def go_back_to_dashboard(self):
         """Quay lại dashboard chính"""
 
