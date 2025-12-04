@@ -3,6 +3,8 @@ from service.student import get_students_by_class
 from service.score import get_scores_by_student
 from service.sectional_class import get_class_by_id as get_sec_class
 from service.subject import get_subject_by_id
+from service.student import get_students_by_class
+import json
 
 
 def calculate_subject_average(score, coff_dict):
@@ -24,7 +26,15 @@ def calculate_subject_average(score, coff_dict):
     cm = float(coff_dict.get('mid', 0))
     cf = float(coff_dict.get('fin', 0))
 
-    average = (r1 * c1) + (r2 * c2) + (r3 * c3) + (mid * cm) + (fin * cf)
+    # Tính tổng hệ số
+    total_coeff = c1 + c2 + c3 + cm + cf
+
+    # Tránh chia cho 0
+    if total_coeff == 0:
+        return 0.0
+
+    # Tính điểm trung bình có trọng số (CHIA CHO TỔNG HỆ SỐ)
+    average = (r1 * c1 + r2 * c2 + r3 * c3 + mid * cm + fin * cf) / total_coeff
     return round(average, 2)
 
 
@@ -105,8 +115,6 @@ def get_coefficient_name(coff_json):
         return "Hệ số tùy chỉnh"
 def get_class_statistics(class_id):
     """Lấy thống kê điểm của một lớp"""
-    from service.student import get_students_by_class
-    from service.score import get_scores_by_student
     
     students = get_students_by_class(class_id)
     statistics = []
@@ -119,12 +127,27 @@ def get_class_statistics(class_id):
         subject_count = 0
         
         for score in scores:
-            # Sử dụng coefficient mặc định đơn giản
-            default_coeff = {
-                'reg1': 0.1/3, 'reg2': 0.1/3, 'reg3': 0.1/3,
-                'mid': 0.3, 'fin': 0.6
-            }
-            avg = calculate_subject_average(score, default_coeff)
+            # Lấy thông tin lớp học phần
+            sectional_class = get_sec_class(score.sectional_class_id)
+            if not sectional_class:
+                continue
+            
+            # Lấy thông tin môn học để có hệ số
+            subject = get_subject_by_id(sectional_class.subject_id)
+            if not subject or not subject.coff:
+                continue
+            
+            # Parse hệ số từ JSON
+            if isinstance(subject.coff, str):
+                try:
+                    coff_dict = json.loads(subject.coff.replace("'", '"'))
+                except:
+                    continue
+            else:
+                coff_dict = subject.coff
+            
+            # Tính điểm trung bình môn với hệ số đúng
+            avg = calculate_subject_average(score, coff_dict)
             total_score_10 += avg
             total_gpa_4 += convert_to_gpa_4(avg)
             subject_count += 1
@@ -147,7 +170,6 @@ def get_class_statistics(class_id):
             'subject_count': subject_count
         })
     return statistics
-
 
 def get_student_detailed_scores(student_id):
     """Lấy điểm chi tiết của sinh viên kèm thông tin môn học"""
@@ -187,11 +209,18 @@ def get_student_detailed_scores(student_id):
             continue
         
         # Tính điểm trung bình môn
-        default_coeff = {
-            'reg1': 0.1/3, 'reg2': 0.1/3, 'reg3': 0.1/3,
-            'mid': 0.3, 'fin': 0.6
-        }
-        avg = calculate_subject_average(score, default_coeff)
+        # Lấy hệ số thực tế từ môn học
+        if isinstance(subject.coff, str):
+            try:
+                coff_dict = json.loads(subject.coff.replace("'", '"'))
+            except:
+                # Nếu parse lỗi, bỏ qua môn này
+                continue
+        else:
+            coff_dict = subject.coff
+
+        # Tính điểm trung bình môn với hệ số đúng
+        avg = calculate_subject_average(score, coff_dict)
         
         detailed_scores.append({
             'subject_id': subject.id,
