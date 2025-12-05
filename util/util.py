@@ -3,9 +3,6 @@ from dotenv import load_dotenv
 from types import SimpleNamespace
 
 # Load .env file
-from types import SimpleNamespace
-
-# Load .env file
 load_dotenv()
 
 default_vals = SimpleNamespace(
