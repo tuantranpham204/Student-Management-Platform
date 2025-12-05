@@ -104,3 +104,27 @@ def update_binds(sec_class: dict):
     set_clause = set_clause[:-1]
     return set_clause, binds
 
+def get_students_by_sectional_class(sectional_class_id):
+    """Lấy danh sách học sinh trong một lớp học phần
+
+    Nếu lớp đã có điểm: trả về sinh viên đã có điểm
+    Nếu lớp chưa có điểm: trả về tất cả sinh viên
+    """
+    from service.score import get_scores_by_sectional_class
+    from service.student import get_all_students
+
+    # Lấy điểm của lớp này
+    scores_in_class = get_scores_by_sectional_class(sectional_class_id)
+
+    if scores_in_class:
+        # Nếu đã có điểm, lấy sinh viên từ điểm
+        student_ids = list(set([s.student_id for s in scores_in_class]))
+        all_students = get_all_students()
+        students = [s for s in all_students if s.sid in student_ids]
+    else:
+        # Nếu chưa có điểm, trả về tất cả sinh viên (giới hạn 100)
+        all_students = get_all_students()
+        students = all_students[:100]  # Giới hạn 100 sinh viên
+
+    return students
+

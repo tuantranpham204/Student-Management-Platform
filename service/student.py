@@ -223,7 +223,6 @@ def update_binds(student: dict):
     if student.get("status"):
         set += f" s.status = %s ,"
         binds.append(student["status"])
-    # FIXED: Added Image field handling
     if student.get("img"):
         set += f" s.img = %s ,"
         binds.append(student["img"])
@@ -233,3 +232,5 @@ def update_binds(student: dict):
 
     set = re.sub(r'.$', '', set)
     return set, binds
+
+
