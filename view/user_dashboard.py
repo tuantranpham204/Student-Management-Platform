@@ -316,7 +316,7 @@ class UserDashboard(tk.Frame):
 
         fig2, ax2 = plt.subplots(figsize=(5, 4))
         bars2 = ax2.barh(major_labels, major_values, color='#FFA07A', edgecolor='#2C3E50', linewidth=1.5)
-        ax2.set_title("Số lượng lớp theo ngành)", fontsize=12, fontweight='bold', pad=10)
+        ax2.set_title("Số lượng lớp theo ngành", fontsize=12, fontweight='bold', pad=10)
         ax2.set_xlabel("Số lượng lớp", fontsize=10, fontweight='bold')
         ax2.set_ylabel("Ngành", fontsize=10, fontweight='bold')
         ax2.tick_params(labelsize=8)
@@ -363,7 +363,7 @@ class UserDashboard(tk.Frame):
             autotext.set_fontsize(10)
             autotext.set_fontweight('bold')
 
-        ax3.set_title("Phân bố môn học theo hệ số)", fontsize=12, fontweight='bold', pad=10)
+        ax3.set_title("Phân bố môn học theo hệ số", fontsize=12, fontweight='bold', pad=10)
 
         canvas3 = FigureCanvasTkAgg(fig3, master=container3)
         canvas3.draw()
@@ -953,11 +953,11 @@ class UserDashboard(tk.Frame):
 
         for coff, subjects_list in sorted(subjects_by_coff.items()):
             # Insert parent row
-            parent = tree.insert('', 'end', values=(f"Hệ số {coff}", len(subjects_list), '', ''),
+            parent = tree.insert('', 'end', values=(f"{get_coefficient_name(coff)}", len(subjects_list), '', ''),
                                  tags=('parent',))
             # Insert children
             for subject in subjects_list:
-                tree.insert(parent, 'end', values=(coff, '', subject.id, subject.name))
+                tree.insert(parent, 'end', values=(get_coefficient_name(coff), '', subject.id, subject.name))
 
         tree.tag_configure('parent', background='#E8F4F8', font=('Arial', 10, 'bold'))
 
