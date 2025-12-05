@@ -195,10 +195,14 @@ class UniversityManagement(tk.Frame):
                   command=lambda: self.handle_action('add', entity_type)).grid(row=0, column=0, padx=2, pady=2)
         tk.Button(btn_fr, text="Update", width=8, bg="#FCF3CF",
                   command=lambda: self.handle_action('update', entity_type)).grid(row=0, column=1, padx=2, pady=2)
-        tk.Button(btn_fr, text="Delete", width=8, bg="#FADBD8",
-                  command=lambda: self.handle_action('delete', entity_type)).grid(row=1, column=0, padx=2, pady=2)
+
+        # REPLACED DELETE WITH REFRESH
+        tk.Button(btn_fr, text="Refresh", width=8, bg="#AED6F1",
+                  command=lambda: self.handle_action('refresh', entity_type)).grid(row=1, column=0, padx=2, pady=2)
+
         tk.Button(btn_fr, text="Search", width=8, bg="#D6EAF8",
                   command=lambda: self.handle_action('search', entity_type)).grid(row=1, column=1, padx=2, pady=2)
+
     def setup_treeview(self):
         self.tree = ttk.Treeview(self.fr_lst, show='headings')
         self.tree.grid(row=0, column=0, sticky='nsew')
@@ -357,6 +361,12 @@ class UniversityManagement(tk.Frame):
     @handle_exceptions()
     def handle_action(self, action, entity_type):
         service = self.get_service_module(entity_type)
+
+        # --- REFRESH ---
+        if action == 'refresh':
+            self.load_data(entity_type)
+            return
+
         data = self.get_entry_data(entity_type)
         if data is None: return
 
@@ -405,30 +415,34 @@ class UniversityManagement(tk.Frame):
                 self.tree.insert('', 'end', values=tuple(values))
             return
 
-        # --- DELETE ---
-        if action == 'delete':
-            pk = data.get('id')
-            if not pk:
-                messagebox.showerror("Error", "ID is required for deletion.")
-                return
-            if messagebox.askyesno("Confirm", f"Delete {entity_type} {pk}?"):
-                if hasattr(service, f'delete_{entity_type}'):
-                    getattr(service, f'delete_{entity_type}')(pk)
-                elif hasattr(service, 'delete_class'):
-                    service.delete_class(pk)
-                messagebox.showinfo("Success", "Deleted successfully.")
-                self.load_data(entity_type)
-            return
+        # --- DELETE REMOVED (Replaced by Refresh) ---
+        # if action == 'delete': ...
 
         # --- ADD / UPDATE ---
         if action == 'add':
-            if 'id' in data and not data['id']: del data['id']
+            # FIX: Ensure ID is removed for auto-increment entities
+            # This prevents TypeError when service function receives unexpected 'id'
+            if entity_type in ['department', 'major', 'semester', 'sectional_class']:
+                if 'id' in data:
+                    del data['id']
 
+            # For entities with Manual IDs, ensure ID is present
+            elif entity_type in ['subject', 'departmental_class']:
+                if not data.get('id'):
+                    messagebox.showerror("Validation Error", f"ID is required for {entity_type}.")
+                    return
+
+            new_obj = None
             if hasattr(service, f'add_{entity_type}'):
-                getattr(service, f'add_{entity_type}')(**data)
+                new_obj = getattr(service, f'add_{entity_type}')(**data)
             elif hasattr(service, 'add_class'):
-                service.add_class(**data)
+                new_obj = service.add_class(**data)
+
             messagebox.showinfo("Success", "Added successfully.")
+
+            # Update ID field with auto-incremented value if available
+            if new_obj and hasattr(new_obj, 'id'):
+                self.update_id_field(entity_type, new_obj.id)
 
         elif action == 'update':
             if not data.get('id'):
@@ -442,6 +456,25 @@ class UniversityManagement(tk.Frame):
             messagebox.showinfo("Success", "Updated successfully.")
 
         self.load_data(entity_type)
+
+    def update_id_field(self, entity_type, new_id):
+        entry = None
+        if entity_type == 'department':
+            entry = self.ent_dep_id
+        elif entity_type == 'major':
+            entry = self.ent_maj_id
+        elif entity_type == 'departmental_class':
+            entry = self.ent_dep_cls_id
+        elif entity_type == 'semester':
+            entry = self.ent_sem_id
+        elif entity_type == 'subject':
+            entry = self.ent_subj_id
+        elif entity_type == 'sectional_class':
+            entry = self.ent_sec_cls_id
+
+        if entry:
+            entry.delete(0, tk.END)
+            entry.insert(0, str(new_id))
 
     def clear_entries(self, entity_type):
         if entity_type == 'department':
@@ -539,15 +572,3 @@ class UniversityManagement(tk.Frame):
                 if sid == sem_id: self.sel_sec_cls_sem.set(name); break
             for name, suid in self.id_maps['subject'].items():
                 if suid == sub_id: self.sel_sec_cls_subj.set(name); break
-            for name, mid in self.id_maps['major'].items():
-                if mid == maj_id: self.sel_sec_cls_maj.set(name); break
-
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    root.resizable(True, True)
-    management = UniversityManagement(root)
-    management.grid(column=0, row=0, sticky='nsew')
-    root.grid_columnconfigure(0, weight=1)
-    root.grid_rowconfigure(0, weight=1)
-    root.mainloop()
