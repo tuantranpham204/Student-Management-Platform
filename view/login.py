@@ -50,7 +50,7 @@ class LoginView(tk.Frame):
         else:
             self.ent_pw.config(show='')
 
-    def verify_user(self):  # Added 'event' because you are using .bind()
+    def verify_user(self):
         username = self.ent_us.get()
         password = self.ent_pw.get()
 

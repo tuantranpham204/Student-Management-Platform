@@ -16,6 +16,8 @@ import pandas as pd
 from datetime import datetime
 from PIL import Image, ImageTk
 import shutil
+import csv
+from fpdf import FPDF  # Import fpdf library
 
 
 class StudentManagement(tk.Frame):
@@ -168,33 +170,45 @@ class StudentManagement(tk.Frame):
         self.sel_sec_cls = tk.ttk.Combobox(self.fr_inp, textvariable=self.sel_sec_cls_var, state='readonly', width=27)
         self.sel_sec_cls.grid(row=5, column=col4, padx=10, pady=10)
 
+        # ================= BUTTON LAYOUT =================
         self.fr_btn = tk.Frame(self.fr_inp)
-        self.fr_btn.grid(row=6, column=col3, padx=10, pady=10, columnspan=2, rowspan=3, sticky='nsew')
+        self.fr_btn.grid(row=6, column=col3, padx=10, pady=10, columnspan=2, rowspan=4,
+                         sticky='nsew')  # Changed rowspan to 4
 
+        # Configure columns for 3-button layout
+        self.fr_btn.grid_columnconfigure(0, weight=1)
+        self.fr_btn.grid_columnconfigure(1, weight=1)
+        self.fr_btn.grid_columnconfigure(2, weight=1)
+
+        # Row 1: Actions (Add, Update, Refresh)
         self.btn_add = tk.Button(self.fr_btn, text='Add student', padx=10, pady=5, command=self.add_student)
         self.btn_add.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
 
         self.btn_upd = tk.Button(self.fr_btn, text='Update student', padx=10, pady=5, command=self.update_student)
         self.btn_upd.grid(row=0, column=1, padx=5, pady=5, sticky='nsew')
 
-        self.btn_del = tk.Button(self.fr_btn, text='Delete Student', padx=10, pady=5, command=self.delete_student)
-        self.btn_del.grid(row=0, column=2, padx=5, pady=5, sticky='nsew')
-
         self.btn_clr = tk.Button(self.fr_btn, text='Refresh Form', padx=10, pady=5, command=self.clear_entries)
-        self.btn_clr.grid(row=1, column=0, padx=5, pady=5, sticky='nsew')
+        self.btn_clr.grid(row=0, column=2, padx=5, pady=5, sticky='nsew')
 
+        # Row 2: Data Tools (Search, All, Extract)
         self.btn_search = tk.Button(self.fr_btn, text='Search Student', padx=10, pady=5, command=self.search_student)
-        self.btn_search.grid(row=1, column=1, padx=5, pady=5, sticky='nsew')
+        self.btn_search.grid(row=1, column=0, padx=5, pady=5, sticky='nsew')
 
         self.btn_all = tk.Button(self.fr_btn, text='Get All Students', padx=10, pady=5, command=self.get_all_students)
-        self.btn_all.grid(row=1, column=2, padx=5, pady=5, sticky='nsew')
+        self.btn_all.grid(row=1, column=1, padx=5, pady=5, sticky='nsew')
 
-        self.btn_xls = tk.Button(self.fr_btn, text='Extract to XLSX', padx=10, pady=5, command=self.export_to_xlsx)
-        self.btn_xls.grid(row=2, column=0, padx=5, pady=5, sticky='nsew', columnspan=2)
+        self.btn_xls = tk.Button(self.fr_btn, text='Extract to CSV', padx=10, pady=5, command=self.export_to_csv)
+        self.btn_xls.grid(row=1, column=2, padx=5, pady=5, sticky='nsew')
 
+        # Row 3: PDF Export (New Button)
+        self.btn_pdf = tk.Button(self.fr_btn, text='Extract to PDF', padx=10, pady=5, command=self.export_to_pdf)
+        self.btn_pdf.grid(row=2, column=0, columnspan=3, padx=5, pady=5, sticky='nsew')
+
+        # Row 4: Exit (Full width)
         self.btn_exit = tk.Button(self.fr_btn, text='Exit', padx=10, pady=5, command=self.go_back, bg='#FF6B6B',
                                   fg='white')
-        self.btn_exit.grid(row=2, column=2, padx=5, pady=5, sticky='nsew')
+        self.btn_exit.grid(row=3, column=0, columnspan=3, padx=5, pady=5, sticky='nsew')
+        # =====================================================
 
         # === List Frame (Treeview) ===
         self.lst = ttk.Treeview(self.fr_lst, columns=("ord",) + util.attrs.student, show='headings')
@@ -231,15 +245,44 @@ class StudentManagement(tk.Frame):
 
         self.lst.bind("<<TreeviewSelect>>", self.load_student_data)
 
+    def init_pro5_pic(self):
+        """Initialize image directory paths."""
+        # Calculate Project Root (parent of the 'view' folder)
+        self.PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+        # Define the relative path structure
+        self.PROFILE_PIC_RELATIVE_DIR = os.path.join("public", "profile_pictures")
+
+        # Define the full absolute path for file operations
+        self.PROFILE_PIC_DIR = os.path.join(self.PROJECT_ROOT, self.PROFILE_PIC_RELATIVE_DIR)
+
+        try:
+            os.makedirs(self.PROFILE_PIC_DIR, exist_ok=True)
+        except OSError as e:
+            print(f"Error creating profile pic directory: {e}")
+            messagebox.showerror("IO Error", "Could not create image directory.")
+        self.img_path_src = None
+
     def go_back(self):
         if self.back_callback:
             self.back_callback()
         else:
-            # Fallback if run directly or no callback provided
             self.parent.quit()
 
-    # ... (Keep the rest of the methods exactly as they were) ...
-    # Copying other methods to ensure file is complete
+    def select_item_by_sid(self, sid):
+        """Helper to find and select a row by Student ID to trigger auto-fill."""
+        if not sid: return
+        for item in self.lst.get_children():
+            values = self.lst.item(item, 'values')
+            # values[1] is the SID column based on column definition
+            if str(values[1]) == str(sid):
+                self.lst.selection_set(item)
+                self.lst.focus(item)
+                self.lst.see(item)  # Scroll to item
+
+                # Manually trigger load since selection_set doesn't always trigger the event automatically in code
+                self.load_student_data()
+                return
 
     @handle_exceptions(default_return_value=[])
     def populate_comboboxes(self):
@@ -357,17 +400,31 @@ class StudentManagement(tk.Frame):
                 self.pro5_pic.create_text(70, 110, text="Load Error", fill="red")
 
     def handle_image_save(self, sid):
+        """Save image with relative path handling."""
+        # Case 1: User selected a NEW image (self.img_path_src is set)
         if self.img_path_src and os.path.exists(self.img_path_src):
             try:
                 _, ext = os.path.splitext(self.img_path_src)
                 if not ext: ext = ".jpg"
+
+                # Create standard filename: studentID.extension
                 new_filename = f"{sid}{ext.lower()}"
+
+                # Destination: Absolute path for copying
                 dest_path = os.path.join(self.PROFILE_PIC_DIR, new_filename)
+
+                # Copy the file
                 shutil.copy(self.img_path_src, dest_path)
-                return os.path.abspath(dest_path)
+
+                # Return RELATIVE path for database storage
+                # This makes the DB portable (e.g. "public/profile_pictures/123.jpg")
+                rel_path = os.path.join(self.PROFILE_PIC_RELATIVE_DIR, new_filename)
+                return rel_path.replace("\\", "/")
             except Exception as e:
                 messagebox.showerror("Image Save Error", f"Could not save image: {e}")
                 return self.img_path.get() or None
+
+        # Case 2: No new image selected, return the existing path (hidden field)
         return self.img_path.get() or None
 
     def get_student_from_entries(self) -> sn:
@@ -395,17 +452,6 @@ class StudentManagement(tk.Frame):
         )
         return student
 
-    def init_pro5_pic(self):
-        self.PROFILE_PIC_DIR = os.path.join(
-            os.path.dirname(__file__), "..", "public", "profile_pictures"
-        )
-        try:
-            os.makedirs(self.PROFILE_PIC_DIR, exist_ok=True)
-        except OSError as e:
-            print(f"Error creating profile pic directory: {e}")
-            messagebox.showerror("IO Error", "Could not create image directory.")
-        self.img_path_src = None
-
     @handle_exceptions()
     def load_student_data(self, event=None):
         selected_item = self.lst.selection()
@@ -416,13 +462,14 @@ class StudentManagement(tk.Frame):
         item = self.lst.item(selected_item)
         values = item['values']
         data = dict(zip(("ord",) + util.attrs.student, values))
+
+        # Fetch full student object from service
         student = student_service.get_student_by_sid(data['sid'])
-        self.img_path.set(student.img or "")
-        self.img_path_src = None
         if not student:
             messagebox.showerror("Error", "Could not fetch student details.")
             return
 
+        # --- Fill Text Entries ---
         self.ent_sid.insert(0, student.sid)
         self.ent_sid.config(state='disabled')
         self.ent_fname.insert(0, student.fname)
@@ -432,12 +479,14 @@ class StudentManagement(tk.Frame):
         self.ent_phone.insert(0, student.phone or "")
         self.ent_email.insert(0, student.email or "")
         self.ent_dob.set_date(student.dob)
-        self.gender.set(student.gender)
 
+        # --- Fill Comboboxes/Radios ---
+        self.gender.set(student.gender)
         self.sel_gen_var.set(util.gen_K(student.generation))
         self.sel_status_var.set(util.status.get(str(student.status), ""))
-        self.sel_sec_cls.config(state='disabled')
 
+        # --- Handle Class/Major Hierarchy ---
+        self.sel_sec_cls.config(state='disabled')
         if student.departmental_class_id:
             try:
                 s_dep_cls = dep_cls_service.get_class_by_id(student.departmental_class_id)
@@ -447,27 +496,41 @@ class StudentManagement(tk.Frame):
                 s_dep = department_service.get_department_by_major_id(s_major.id)
                 self.sel_dep_var.set(s_dep.name)
             except (StopIteration, AttributeError):
-                if student.departmental_class_id in self.cls_name_to_id.values():
-                    cls_name = [k for k, v in self.cls_name_to_id.items() if v == student.departmental_class_id][0]
-                    self.sel_dep_cls_var.set(cls_name)
                 pass
 
-            self.pro5_pic.delete("all")
-            if student.img and os.path.exists(student.img):
+        # --- IMAGE LOADING LOGIC ---
+        self.pro5_pic.delete("all")
+        self.img_path_src = None  # Reset source selection
+
+        if not student.img:
+            # Case 1: No Image Path in DB
+            self.pro5_pic.create_text(70, 110, text="No Image", fill="grey")
+            self.img_path.set("")
+        else:
+            # Save the DB path to hidden var for updates
+            self.img_path.set(student.img)
+
+            # Resolve the full path
+            if os.path.isabs(student.img):
+                full_path = student.img
+            else:
+                full_path = os.path.join(self.PROJECT_ROOT, student.img)
+
+            # Check if file actually exists
+            if not os.path.exists(full_path):
+                # Case 2: Path exists in DB, but file is missing
+                self.pro5_pic.create_text(70, 110, text="Image Not Found", fill="red")
+            else:
+                # Case 3: Image found, load and display
                 try:
-                    pro5_pic = Image.open(student.img).resize((140, 220))
-                    self._pro5_pic_tk = ImageTk.PhotoImage(pro5_pic)
+                    pil_image = Image.open(full_path)
+                    # Resize with ANTIALIAS (LANCZOS)
+                    pil_image = pil_image.resize((140, 220), Image.Resampling.LANCZOS)
+                    self._pro5_pic_tk = ImageTk.PhotoImage(pil_image)
                     self.pro5_pic.create_image(0, 0, anchor=tk.NW, image=self._pro5_pic_tk)
                 except Exception as e:
-                    print(f"Error loading image '{student.img}': {e}")
-                    self.pro5_pic.create_text(70, 110, text="Load Error", fill="red")
-            else:
-                self.pro5_pic.create_text(70, 110, text="No Image", fill="grey")
-
-        self.img_path.set(student.img or "")
-        if student.img:
-            self.pro5_pic.delete("all")
-            self.pro5_pic.create_text(70, 110, text=student.img.split('/')[-1], fill="black")
+                    print(f"Error loading valid image path: {e}")
+                    self.pro5_pic.create_text(70, 110, text="File Error", fill="red")
 
     def get_students_from_entries_as_dict(self) -> dict:
         student_inp = {
@@ -482,7 +545,8 @@ class StudentManagement(tk.Frame):
             "gender": util.gender_get[self.gender.get()],
             "generation": self.gen_name_to_id.get(self.sel_gen_var.get()),
             "status": self.status_name_to_id.get(self.sel_status_var.get()),
-            "departmental_class_id": self.cls_name_to_id.get(self.sel_dep_cls_var.get())
+            "departmental_class_id": self.cls_name_to_id.get(self.sel_dep_cls_var.get()),
+            "img": self.img_path.get() or None  # Pass img to search params just in case
         }
         return student_inp
 
@@ -522,6 +586,10 @@ class StudentManagement(tk.Frame):
             student_service.add_student(student)
             messagebox.showinfo("Success", f"Student {student.fname} {student.lname} added successfully.")
             self.get_all_students()
+
+            # Select the student to show the image/details immediately
+            self.select_item_by_sid(student.sid)
+
         except Exception as e:
             messagebox.showerror("Database Error", f"Failed to add student.\nError: {e}")
 
@@ -538,23 +606,12 @@ class StudentManagement(tk.Frame):
             student_service.update_student(vars(student))
             messagebox.showinfo("Success", f"Student {student.fname} {student.lname} updated successfully.")
             self.get_all_students()
+
+            # Select the student to show the image/details immediately
+            self.select_item_by_sid(student.sid)
+
         except Exception as e:
             messagebox.showerror("Database Error", f"Failed to update student.\nError: {e}")
-
-    @handle_exceptions()
-    def delete_student(self):
-        sid = self.ent_sid.get()
-        if not sid:
-            messagebox.showerror("Error", "Please select a student from the list to delete.")
-            return
-
-        if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete student {sid}?"):
-            try:
-                student_service.delete_student(sid)
-                messagebox.showinfo("Success", f"Student {sid} deleted successfully.")
-                self.get_all_students()
-            except Exception as e:
-                messagebox.showerror("Database Error", f"Failed to delete student.\nError: {e}")
 
     @handle_exceptions()
     def search_student(self):
@@ -569,24 +626,123 @@ class StudentManagement(tk.Frame):
         for i in range(len(students)):
             self.lst.insert('', tk.END, values=((i + 1,) + tuple(students[i].values())))
 
+    # UPDATED: Use CSV instead of Excel to avoid openpyxl dependency and fix data formatting issues
     @handle_exceptions()
-    def export_to_xlsx(self):
+    def export_to_csv(self):
         if not self.lst.get_children():
             messagebox.showwarning("Export Error", "There is no data to export.")
             return
-        filepath = filedialog.asksaveasfilename(defaultextension=".xlsx",
-                                                filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")])
+
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+        )
+
         if not filepath:
             return
+
         try:
-            data = []
-            columns = ["Order"] + list(util.attrs.student)
-            for item in self.lst.get_children():
-                data.append(self.lst.item(item)['values'])
-            df = pd.DataFrame(data, columns=columns)
-            df = df.drop(columns=['ord', 'img', 'address', 'cid', 'phone', 'email'])
-            df.to_excel(filepath, index=False)
+            # Use 'headings' for nice readable headers
+            headers = ["Order"] + list(util.headings.student)
+
+            # Filter out unwanted columns (Image Directory, etc) before writing
+            unwanted_headers = ['Image Directory', 'Address', 'Citizen ID', 'Phone number', 'Email']
+
+            # Create a list of indices to KEEP
+            indices_to_keep = [i for i, h in enumerate(headers) if h not in unwanted_headers]
+            final_headers = [headers[i] for i in indices_to_keep]
+
+            with open(filepath, mode='w', newline='', encoding='utf-8-sig') as file:
+                writer = csv.writer(file)
+                writer.writerow(final_headers)
+
+                for item in self.lst.get_children():
+                    row_values = self.lst.item(item)['values']
+
+                    # Convert everything to string to be safe
+                    full_row = [str(x) for x in row_values]
+
+                    # Write only the columns we decided to keep
+                    filtered_row = [full_row[i] for i in indices_to_keep]
+                    writer.writerow(filtered_row)
+
             messagebox.showinfo("Export Success", f"Data exported successfully to\n{filepath}")
+
+        except Exception as e:
+            messagebox.showerror("Export Error", f"Failed to export data.\nError: {e}")
+
+    @handle_exceptions()
+    def export_to_pdf(self):
+        if not self.lst.get_children():
+            messagebox.showwarning("Export Error", "There is no data to export.")
+            return
+
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".pdf",
+            filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")]
+        )
+
+        if not filepath:
+            return
+
+        try:
+            # Initialize PDF
+            pdf = FPDF()
+            pdf.add_page()
+            # If you need Unicode characters (like Vietnamese), you must add a font that supports it.
+            # Assuming standard Arial for now, but note standard FPDF doesn't support UTF-8 well without a TTF font.
+            # For simplicity, let's use the built-in Arial font (standard ASCII).
+            # If you need UTF-8, you'd need to load a font like DejaVuSans.
+            # Example: pdf.add_font('DejaVu', '', 'DejaVuSans.ttf', uni=True)
+            # pdf.set_font('DejaVu', '', 10)
+
+            # Using Arial (might not show Vietnamese accents correctly without a custom font)
+            pdf.set_font("Arial", size=10)
+
+            # Title
+            pdf.set_font("Arial", 'B', 16)
+            pdf.cell(200, 10, txt="Student List", ln=True, align='C')
+            pdf.ln(10)
+
+            # Define Columns to Export (same logic as CSV)
+            headers = ["Order"] + list(util.headings.student)
+            unwanted_headers = ['Image Directory', 'Address', 'Citizen ID', 'Phone number', 'Email']
+            indices_to_keep = [i for i, h in enumerate(headers) if h not in unwanted_headers]
+            final_headers = [headers[i] for i in indices_to_keep]
+
+            # Table Header
+            pdf.set_font("Arial", 'B', 10)
+
+            # Simple fixed width calculation (adjust as needed)
+            col_width = 190 / len(final_headers)
+
+            for header in final_headers:
+                # Truncate header if too long
+                display_header = (header[:15] + '..') if len(header) > 15 else header
+                pdf.cell(col_width, 10, display_header, border=1)
+            pdf.ln()
+
+            # Table Data
+            pdf.set_font("Arial", size=9)
+            for item in self.lst.get_children():
+                row_values = self.lst.item(item)['values']
+                full_row = [str(x) for x in row_values]
+                filtered_row = [full_row[i] for i in indices_to_keep]
+
+                for datum in filtered_row:
+                    # Basic sanitization for standard FPDF (latin-1)
+                    # This replaces non-latin-1 chars to prevent crashes, but won't show them correctly.
+                    # Ideally, you should bundle a .ttf font for full UTF-8 support.
+                    safe_datum = str(datum).encode('latin-1', 'replace').decode('latin-1')
+
+                    # Truncate cell content if too long
+                    display_datum = (safe_datum[:18] + '..') if len(safe_datum) > 18 else safe_datum
+                    pdf.cell(col_width, 10, display_datum, border=1)
+                pdf.ln()
+
+            pdf.output(filepath)
+            messagebox.showinfo("Export Success", f"Data exported successfully to\n{filepath}")
+
         except Exception as e:
             messagebox.showerror("Export Error", f"Failed to export data.\nError: {e}")
 

@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS departments(
 CREATE TABLE IF NOT EXISTS subjects(
     id CHAR(10) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    coff VARCHAR(100) NOT NULL
+    coff VARCHAR(500) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS users(
@@ -52,26 +52,22 @@ CREATE TABLE IF NOT EXISTS departmental_classes(
 
 -- This table represents specific course offerings (e.g., "Math 101, Section A")
 CREATE TABLE IF NOT EXISTS sectional_classes(
-    id INT AUTO_INCREMENT PRIMARY KEY, -- Added for a simple FK in the 'scores' table
+    id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(20) UNIQUE,
     semester_id INT NOT NULL,
     subject_id CHAR(10) NOT NULL,
-    major_id INT NOT NULL, -- Added column that was missing but referenced
-    
-    -- Added missing foreign keys
+    major_id INT NOT NULL,
+
     FOREIGN KEY (semester_id) REFERENCES semesters(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
     FOREIGN KEY (subject_id) REFERENCES subjects(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-    
-    -- Corrected the foreign key that was duplicated and broken
     FOREIGN KEY (major_id) REFERENCES majors(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-    
-    -- Ensures you can't have the same named section for the same subject/semester
+
     UNIQUE KEY uk_class_section (semester_id, subject_id, name)
 );
 
@@ -88,8 +84,8 @@ CREATE TABLE IF NOT EXISTS students(
     gender BIT,
     generation INT,
     status ENUM('-1', '0','1','2'),
-    img VARCHAR(500),
-    departmental_class_id VARCHAR(20) NOT NULL, -- CORRECTED: Changed type from INT to VARCHAR(200
+    img VARCHAR(500), -- Ensure this field exists
+    departmental_class_id VARCHAR(20) NOT NULL,
     FOREIGN KEY (departmental_class_id) REFERENCES departmental_classes(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE
@@ -112,5 +108,3 @@ CREATE TABLE IF NOT EXISTS scores(
     ON DELETE CASCADE
     ON UPDATE CASCADE
 );
-
-
